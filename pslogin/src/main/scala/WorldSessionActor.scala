@@ -287,7 +287,6 @@ class WorldSessionActor extends Actor with MDCContextAware {
       if(is_crouching && !ArmorChangedMessage.changeOnce) {
         //ArmorChangedMessage.changeOnce = true
         //sendRawResponse(hex"BE 87 0C BC E7 A1 34 50 64 24 00")
-        sendResponse(PacketCoding.CreateGamePacket(0, PlayerStateShiftMessage(PlayerState(0, Vector3(3674.8438f, 2726.789f, 91.15625f), 16))))
         //carefully delete inventory
 //        sendRawResponse(hex"19 4C00 00") //beamer
 //        sendRawResponse(hex"19 4D00 00") //beamer ammo

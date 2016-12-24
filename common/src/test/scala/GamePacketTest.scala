@@ -2,6 +2,7 @@
 import java.net.{InetAddress, InetSocketAddress}
 
 import org.specs2.mutable._
+import net.psforever.obj._
 import net.psforever.packet._
 import net.psforever.packet.game._
 import net.psforever.packet.game.objectcreate._
@@ -10,6 +11,78 @@ import scodec.Attempt.Successful
 import scodec.bits._
 
 class GamePacketTest extends Specification {
+
+  "Other Tests" in {
+    "SequentialUID" should {
+      "release" in {
+        val gen = new SequentialUID(6)
+        gen.release mustEqual 0
+        gen.release mustEqual 1
+        gen.release mustEqual 2
+        gen.release mustEqual 3
+        gen.release mustEqual 4
+        gen.release mustEqual 5
+      }
+
+      "recover" in {
+        val gen = new SequentialUID(6)
+        gen.release mustEqual 0
+        gen.release mustEqual 1
+        gen.release mustEqual 2
+        gen.recover() //2
+        gen.release mustEqual 2
+        gen.release mustEqual 3
+        gen.release mustEqual 4
+        gen.recover() //4
+        gen.recover() //3
+        gen.recover() //2
+        gen.release mustEqual 2
+        gen.recover() //2
+        gen.recover() //1
+        gen.recover() //0
+        gen.recover() //nothing
+        gen.release mustEqual 0
+      }
+
+      "recover(n)" in {
+        val gen = new SequentialUID(6)
+        gen.release mustEqual 0
+        gen.release mustEqual 1
+        gen.release mustEqual 2
+        gen.release mustEqual 3
+        gen.recover(2) //2
+        gen.recover() //nothing
+        gen.release mustEqual 2
+        gen.lastRecoveredUID mustEqual SequentialUID.NaN
+        gen.lastReleasedUID mustEqual 3
+        gen.recover() //3
+        gen.release mustEqual 3
+        gen.recover() //3
+        gen.recover() //2
+        gen.recover() //1
+        gen.recover() //0
+      }
+
+      "recover (special)" in {
+        val gen = new SequentialUID(6)
+        gen.release mustEqual 0
+        gen.release mustEqual 1
+        gen.release mustEqual 2
+        gen.release mustEqual 3
+        gen.release mustEqual 4
+        gen.release mustEqual 5
+        gen.recover(4)
+        gen.recover(2)
+        gen.recover(3)
+        gen.lastReleasedUID mustEqual 5
+        gen.lastRecoveredUID mustEqual 3
+        gen.recover(5) //recover only existing uid before recovered uids in waiting
+        gen.lastReleasedUID mustEqual 1
+        gen.lastRecoveredUID mustEqual SequentialUID.NaN
+        gen.release mustEqual 2 //0 and 1 are the only existing uids, so 2 must be released next
+      }
+    }
+  }
 
   "PlanetSide game packet" in {
 
