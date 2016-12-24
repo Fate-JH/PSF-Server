@@ -154,6 +154,67 @@ class WorldSessionActor extends Actor with MDCContextAware {
   )
   val objectHex = ObjectCreateMessage(0, ObjectClass.AVATAR, PlanetSideGUID(75), obj)
 
+  val app2 = CharacterAppearanceData(
+    Vector3(3674.8438f, 2726.789f, 91.15625f),
+    19,
+    1,
+    false,
+    4,
+    "Variable Dummmy",
+    4,
+    2,
+    2, 9,
+    1,
+    3, 118, 30, 0x8080, 0xFFFF, 2,
+    0, 64, 7,
+    RibbonBars()
+  )
+  val obj2 = CharacterData(
+    app2,
+    100, 100,
+    50,
+    1, 7, 7,
+    100, 100,
+    28, 4, 44, 84, 104, 1900,
+    List.empty,
+    List.empty,
+    InventoryData(
+      true, false, false, List.empty
+    )
+  )
+  val objectHex2 = ObjectCreateMessage(0, ObjectClass.AVATAR, PlanetSideGUID(89), obj2)
+//  val app3 = CharacterAppearanceData(
+//    Vector3(3674.8438f, 2728.789f, 91.15625f),
+//    19,
+//    1,
+//    false,
+//    4,
+//    "Control Dummy",
+//    4,
+//    2,
+//    2, 9,
+//    1,
+//    3, 118, 30, 0x8080, 0xFFFF, 2,
+//    0, 64, 7,
+//    RibbonBars()
+//  )
+//  val obj3 = CharacterData(
+//    app3,
+//    100, 100,
+//    50,
+//    1, 7, 7,
+//    100, 100,
+//    28, 4, 44, 84, 104, 1900,
+//    List.empty,
+//    List.empty,
+//    InventoryData(
+//      true, false, false, List.empty
+//    )
+//  )
+//  val objectHex3 = ObjectCreateMessage(0, ObjectClass.AVATAR, PlanetSideGUID(90), obj3)
+
+  var ang = 0
+
   def handleGamePkt(pkt : PlanetSideGamePacket) = pkt match {
     case ConnectToWorldRequestMessage(server, token, majorVersion, minorVersion, revision, buildDate, unk) =>
 
@@ -206,6 +267,8 @@ class WorldSessionActor extends Actor with MDCContextAware {
               sendResponse(PacketCoding.CreateGamePacket(0, LoadMapMessage("map13","home3",40100,25,true,3770441820L))) //VS Sanctuary
               sendResponse(PacketCoding.CreateGamePacket(0, ZonePopulationUpdateMessage(PlanetSideGUID(13), 414, 138, 0, 138, 0, 138, 0, 138, 0)))
               sendResponse(PacketCoding.CreateGamePacket(0, objectHex))
+              sendResponse(PacketCoding.CreateGamePacket(0, objectHex2))
+              //sendResponse(PacketCoding.CreateGamePacket(0, objectHex3))
 
               // These object_guids are specfic to VS Sanc
               sendResponse(PacketCoding.CreateGamePacket(0, SetEmpireMessage(PlanetSideGUID(2), PlanetSideEmpire.VS))) //HART building C
@@ -284,8 +347,13 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
     case msg @ PlayerStateMessageUpstream(avatar_guid, pos, vel, unk1, aim_pitch, unk2, seq_time, unk3, is_crouching, unk4, unk5, unk6, unk7, unk8) =>
       //log.info("PlayerState: " + msg)
-      if(is_crouching && !ArmorChangedMessage.changeOnce) {
-        //ArmorChangedMessage.changeOnce = true
+      if(is_crouching != ArmorChangedMessage.changeOnce) {
+        ArmorChangedMessage.changeOnce = is_crouching
+        ang += 1
+        sendResponse(PacketCoding.CreateGamePacket(0,
+          PlayerStateMessage(PlanetSideGUID(89), Vector3(3674.8438f, 2726.789f, 91.15625f), 0, 0, 0, 0, true, false, false, false, false))
+        )
+     // sendRawResponse(hex"08 5900 DFD17 B5AEB 380B 0F 80 00 29 90")
         //sendRawResponse(hex"BE 87 0C BC E7 A1 34 50 64 24 00")
         //carefully delete inventory
 //        sendRawResponse(hex"19 4C00 00") //beamer
