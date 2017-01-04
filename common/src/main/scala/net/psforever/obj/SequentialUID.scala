@@ -44,7 +44,7 @@ class SequentialUID(range : Int) extends GenUID {
     * @return a UID
     */
   override def release : Int = {
-    if(uids.length > 0 || lastReleased + 1 > uids.length)
+    if(uids.length == 0 || lastReleased + 1 > uids.length)
       throw new Exception("no available uids")
 
     var uid : Int = -1
