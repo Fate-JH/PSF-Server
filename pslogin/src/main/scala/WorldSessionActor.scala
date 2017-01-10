@@ -350,14 +350,14 @@ class WorldSessionActor extends Actor with MDCContextAware {
       if(is_crouching != ArmorChangedMessage.changeOnce) {
         ArmorChangedMessage.changeOnce = is_crouching
         ang += 1
-        val pkt = PlayerStateMessage(
-          PlanetSideGUID(89),
-          Vector3(3674.8438f, 2726.789f, 91.15625f),
-          Some(Vector3(0.0f,0.0f,0.0f)),
-          0, 0, 0, 0,
-          true, false, false, false, false
-        )
-        sendResponse(PacketCoding.CreateGamePacket(0, pkt))
+//        val pkt = PlayerStateMessage(
+//          PlanetSideGUID(89),
+//          Vector3(3674.8438f, 2726.789f, 91.15625f),
+//          Some(Vector3(0.0f,0.0f,0.0f)),
+//          0, 0, 0, 0,
+//          true, false, false, false, false
+//        )
+//        sendResponse(PacketCoding.CreateGamePacket(0, pkt))
      // sendRawResponse(hex"08 5900 DFD17 B5AEB 380B 0F 80 00 29 90")
         //sendRawResponse(hex"BE 87 0C BC E7 A1 34 50 64 24 00")
         //carefully delete inventory
