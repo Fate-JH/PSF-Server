@@ -113,9 +113,9 @@ class WorldSessionActor extends Actor with MDCContextAware {
   //val objectHex = hex"18 570C0000 BC8 4B00 00F00 00F01 8014 0 00 0 20 2 40 00 0970 49006C006C006C004900490049006C006C006C0049006C0049006C006C0049006C006C006C0049006C006C004900 82 01 40 76 1E 80 80 00 00 00 00 00 3FFFC 0 00 00 00 20 00 00 0 10 00 3 03 FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFC 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03 FF FF FF FD FF FE 00 01 00 0F FF FF FF FE 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 C0 00 42 C5 46 86 C7 00 00 00 80 00 00 12 40 7870655F73616E6374756172795F68656C70 90 7870655F74685F666972656D6F646573 8B 757365645F6265616D6572 85 6D61703133 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 0A 23 02 60 04 04 40 00 00 10 00 06 02 08 14 D0 08 0C 80 00 02 00 02 6B 4E 00 82 88 00 00 02 00 00 C0 41 C0 9E 01 01 90 00 00 64 00 44 2A 00 10 91 00 00 00 40 00 18 08 38 94 40 20 32 00 00 00 80 19 05 48 02 17 20 00 00 08 00 70 29 80 43 64 00 00 32 00 0E 05 40 08 9C 80 00 06 40 01 C0 AA 01 19 90 00 00 C8 00 3A 15 80 28 72 00 00 19 00 04 0A B8 05 26 40 00 03 20 06 C2 59 00 A7 88 00 00 02 00 00 80 00 00"
   //currently, the character's starting BEP is discarded due to unknown bit format
   val app = CharacterAppearanceData(
-    Vector3(3674.8438f, 2726.789f, 91.15625f),
+    Vector3(674.8438f, 726.789f, 91.15625f),
     19,
-    2,
+    1,
     false,
     4,
     "IlllIIIlllIlIllIlllIllI",
@@ -264,7 +264,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
               // LoadMapMessage 13714 in mossy .gcap
               // XXX: hardcoded shit
-              sendResponse(PacketCoding.CreateGamePacket(0, LoadMapMessage("map13","home3",40100,25,true,3770441820L))) //VS Sanctuary
+              sendResponse(PacketCoding.CreateGamePacket(0, LoadMapMessage("ugd03","c3",40100,25,true,3770441820L))) //VS Sanctuary
               sendResponse(PacketCoding.CreateGamePacket(0, ZonePopulationUpdateMessage(PlanetSideGUID(13), 414, 138, 0, 138, 0, 138, 0, 138, 0)))
               sendResponse(PacketCoding.CreateGamePacket(0, objectHex))
               sendResponse(PacketCoding.CreateGamePacket(0, objectHex2))
@@ -347,7 +347,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
     case msg @ PlayerStateMessageUpstream(avatar_guid, pos, vel, unk1, aim_pitch, unk2, seq_time, unk3, is_crouching, unk4, unk5, unk6, unk7, unk8) =>
       //log.info("PlayerState: " + msg)
-      if(is_crouching != ArmorChangedMessage.changeOnce) {
+      if(is_crouching && !ArmorChangedMessage.changeOnce) {
         ArmorChangedMessage.changeOnce = is_crouching
         ang += 1
 //        val pkt = PlayerStateMessage(
@@ -361,19 +361,19 @@ class WorldSessionActor extends Actor with MDCContextAware {
      // sendRawResponse(hex"08 5900 DFD17 B5AEB 380B 0F 80 00 29 90")
         //sendRawResponse(hex"BE 87 0C BC E7 A1 34 50 64 24 00")
         //carefully delete inventory
-//        sendRawResponse(hex"19 4C00 00") //beamer
-//        sendRawResponse(hex"19 4D00 00") //beamer ammo
-//        sendRawResponse(hex"19 4E00 00") //suppressor
-//        sendRawResponse(hex"19 4F00 00") //suppressor ammo
-//        sendRawResponse(hex"19 5000 00") //forceblade
-//        sendRawResponse(hex"19 5100 00") //forceblade ammo?
-//        sendRawResponse(hex"19 5300 00") //ammo, 9mm
-//        sendRawResponse(hex"19 5400 00") //ammo, 9mm
-//        sendRawResponse(hex"19 5500 00") //ammo, 9mm
-//        sendRawResponse(hex"19 5600 00") //ammo, 9mm ap
-//        sendRawResponse(hex"19 5700 00") //ammo, plasma
-//        sendRawResponse(hex"19 5800 00") //rek
-//        sendResponse(PacketCoding.CreateGamePacket(0, ArmorChangedMessage(avatar_guid, 0, 0)))
+        sendRawResponse(hex"19 4C00 00") //beamer
+        sendRawResponse(hex"19 4D00 00") //beamer ammo
+        sendRawResponse(hex"19 4E00 00") //suppressor
+        sendRawResponse(hex"19 4F00 00") //suppressor ammo
+        sendRawResponse(hex"19 5000 00") //forceblade
+        sendRawResponse(hex"19 5100 00") //forceblade ammo?
+        sendRawResponse(hex"19 5300 00") //ammo, 9mm
+        sendRawResponse(hex"19 5400 00") //ammo, 9mm
+        sendRawResponse(hex"19 5500 00") //ammo, 9mm
+        sendRawResponse(hex"19 5600 00") //ammo, 9mm ap
+        sendRawResponse(hex"19 5700 00") //ammo, plasma
+        sendRawResponse(hex"19 5800 00") //rek
+//        sendResponse(PacketCoding.CreateGamePacket(0, ArmorChangedMessage(avatar_guid, 2, 1)))
 //        //see capture "last", starting @ line 688
 //        //note: adding a medkit creates the shortcut if it doesn't exist and dispatches an 0x28 packet to the server
 //        //sendRawResponse(hex"18 7C000000 2580 692 5C0F 9E C0000018000") //reaver fury rockets, 2,6
@@ -390,6 +390,15 @@ class WorldSessionActor extends Actor with MDCContextAware {
 //        sendRawResponse(hex"18 DC000000 2580 501 4406 C8 480000020000C04A13C209019000000C000") // jammer grenades, 7,3
 //        sendRawResponse(hex"18 DC000000 2580 2C9 B905 82 480000020000C041C00C0B0190000078000") // gauss, rifle slot 1
 //        sendRawResponse(hex"18 DC000000 2580 181 F804 89 480000020000C04F35AE0D0190000030000") // sweeper, 0,3
+        val string = hex"18 72010000 2580262 1214 80 400000020000c0ce94522b018000007001d28a856070000014003a5158ac1600000280000"
+        val obj = PacketCoding.DecodePacket(string).require.asInstanceOf[ObjectCreateMessage]
+        log.info("uid: %s, cls: %d, parent: %s, data: %b".format(
+          obj.guid.toString,
+          obj.objectClass,
+          if(obj.parentInfo.isDefined) { obj.parentInfo.get.guid + " " +obj.parentInfo.get.slot} else { "none" },
+          obj.data.isDefined)
+        )
+        sendRawResponse(string)
       }
 
     case msg @ ChatMsg(messagetype, has_wide_contents, recipient, contents, note_contents) =>
@@ -487,6 +496,15 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
     case msg @ ZipLineMessage(player_guid, unk1, unk2, unk3, unk4, unk5, unk6) =>
       log.info("ZipLineMessage: " + msg)
+      if(unk2 == 0) {
+        sendResponse(PacketCoding.CreateGamePacket(0, msg))
+      }
+      else if(unk2 == 1) {
+        //disembark from zipline at destination?
+      }
+      else if(unk2 == 2) {
+        //get off by force
+      }
 
     case msg @ ProximityTerminalUseMessage(player_guid, object_guid, unk) =>
       log.info("ProximityTerminalUseMessage: " + msg)
