@@ -11,6 +11,7 @@ import org.log4s.MDC
 import MDCContextAware.Implicits._
 import net.psforever.packet.game.objectcreate._
 import net.psforever.types.{ChatMessageType, Vector3}
+import scodec.Attempt
 
 class WorldSessionActor extends Actor with MDCContextAware {
   private[this] val log = org.log4s.getLogger
@@ -390,15 +391,10 @@ class WorldSessionActor extends Actor with MDCContextAware {
 //        sendRawResponse(hex"18 DC000000 2580 501 4406 C8 480000020000C04A13C209019000000C000") // jammer grenades, 7,3
 //        sendRawResponse(hex"18 DC000000 2580 2C9 B905 82 480000020000C041C00C0B0190000078000") // gauss, rifle slot 1
 //        sendRawResponse(hex"18 DC000000 2580 181 F804 89 480000020000C04F35AE0D0190000030000") // sweeper, 0,3
-        val string = hex"18 72010000 2580262 1214 80 400000020000c0ce94522b018000007001d28a856070000014003a5158ac1600000280000"
-        val obj = PacketCoding.DecodePacket(string).require.asInstanceOf[ObjectCreateMessage]
-        log.info("uid: %s, cls: %d, parent: %s, data: %b".format(
-          obj.guid.toString,
-          obj.objectClass,
-          if(obj.parentInfo.isDefined) { obj.parentInfo.get.guid + " " +obj.parentInfo.get.slot} else { "none" },
-          obj.data.isDefined)
-        )
-        sendRawResponse(string)
+        //val string = hex"18 27010000 2580 612 a706 82 080000020000c08 1c13a0d0190000078000 13a4701a072000000800" //punisher
+        val obj = ConcurrentFeedWeaponData(0, AmmoBoxData(28, PlanetSideGUID(1693), 0, AmmoBoxData(30)) :: AmmoBoxData(413, PlanetSideGUID(1564), 1, AmmoBoxData(1)) :: Nil)
+        val msg = ObjectCreateMessage(0, 706, PlanetSideGUID(1703), ObjectCreateMessageParent(PlanetSideGUID(75), 2), obj)
+        sendResponse(PacketCoding.CreateGamePacket(0, msg))
       }
 
     case msg @ ChatMsg(messagetype, has_wide_contents, recipient, contents, note_contents) =>

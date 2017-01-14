@@ -2,6 +2,7 @@
 package net.psforever.packet.game.objectcreate
 
 import net.psforever.packet.Marshallable
+import net.psforever.packet.game.PlanetSideGUID
 import scodec.{Attempt, Codec, Err}
 import scodec.codecs._
 import shapeless.{::, HNil}
@@ -28,9 +29,12 @@ case class AmmoBoxData(magazine : Int
 }
 
 object AmmoBoxData extends Marshallable[AmmoBoxData] {
+  def apply(cls : Int, guid : PlanetSideGUID, parentSlot : Int, ammo : AmmoBoxData) : InternalSlot =
+    new InternalSlot(cls, guid, parentSlot, ammo)
+
   implicit val codec : Codec[AmmoBoxData] = (
     uint8L ::
-      uintL(15) ::
+      uint(15) ::
       ("magazine" | uint16L) ::
       bool
     ).exmap[AmmoBoxData] (
@@ -38,7 +42,7 @@ object AmmoBoxData extends Marshallable[AmmoBoxData] {
       case 0xC8 :: 0 :: mag :: false :: HNil =>
         Attempt.successful(AmmoBoxData(mag))
       case a :: b :: _ :: d :: HNil =>
-        Attempt.failure(Err("illegal ammunition data format"))
+        Attempt.failure(Err("invalid ammunition data format"))
     },
     {
       case AmmoBoxData(mag) =>

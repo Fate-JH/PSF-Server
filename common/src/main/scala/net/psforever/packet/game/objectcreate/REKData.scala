@@ -37,7 +37,7 @@ object REKData extends Marshallable[REKData] {
       case code :: 8 :: 0 :: 2 :: 0 :: 8 :: 0 :: HNil =>
         Attempt.successful(REKData(code))
       case code :: _ :: _ :: _ :: _ :: _ :: _ :: HNil =>
-        Attempt.failure(Err("illegal rek data format"))
+        Attempt.failure(Err("invalid rek data format"))
     },
     {
       case REKData(code) =>
