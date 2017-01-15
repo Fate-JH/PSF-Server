@@ -490,15 +490,16 @@ class WorldSessionActor extends Actor with MDCContextAware {
     case msg @ SplashHitMessage(bytes) =>
       log.info("SplashHitMessage: " + bytes.toString)
 
-    case msg @ ZipLineMessage(player_guid, unk1, unk2, unk3, unk4, unk5, unk6) =>
+    case msg @ ZipLineMessage(player_guid, origin_side, action, id, unk4, unk5, unk6) =>
       log.info("ZipLineMessage: " + msg)
-      if(unk2 == 0) {
-        sendResponse(PacketCoding.CreateGamePacket(0, msg))
+      if(action == 0) {
+        //sendResponse(PacketCoding.CreateGamePacket(0, msg))
       }
-      else if(unk2 == 1) {
+      else if(action == 1) {
         //disembark from zipline at destination?
+        //sendResponse(PacketCoding.CreateGamePacket(0, ZipLineMessage(player_guid, origin_side, 3, id, unk4, unk5, unk6)))
       }
-      else if(unk2 == 2) {
+      else if(action == 2) {
         //get off by force
       }
 
@@ -507,6 +508,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
     case msg @ MountVehicleMsg(player_guid, vehicle_guid, seat) =>
       log.info("MountVehicleMsg: " + msg)
+      sendResponse(PacketCoding.CreateGamePacket(0, ObjectAttachMessage(vehicle_guid, player_guid, 0)))
 
     case msg @ DismountBuildingMsg(player_guid, building_guid) =>
       log.info("DismountBuildingMsg: " + msg)
@@ -522,6 +524,9 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
     case msg @ SquadDefinitionActionMessage(bytes) =>
       log.info("SquadDefinitionActionMessage: " + msg)
+
+    case msg @ GenericCollisionMsg(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) =>
+      log.info("GenericCollision: "+msg)
 
     case default => log.debug(s"Unhandled GamePacket ${pkt}")
   }

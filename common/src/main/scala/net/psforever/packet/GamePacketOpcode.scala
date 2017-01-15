@@ -335,7 +335,7 @@ object GamePacketOpcode extends Enumeration {
     case 0x0c => noDecoder(DestroyMessage)
     case 0x0d => game.ReloadMessage.decode
     case 0x0e => game.MountVehicleMsg.decode
-    case 0x0f => noDecoder(DismountVehicleMsg)
+    case 0x0f => game.DismountVehicleMsg.decode
 
     // OPCODES 0x10-1f
     case 0x10 => game.UseItemMessage.decode
@@ -364,11 +364,11 @@ object GamePacketOpcode extends Enumeration {
     case 0x24 => game.SetEmpireMessage.decode
     case 0x25 => game.EmoteMsg.decode
     case 0x26 => noDecoder(UnuseItemMessage)
-    case 0x27 => noDecoder(ObjectDetachMessage)
+    case 0x27 => game.ObjectDetachMessage.decode
     // 0x28
     case 0x28 => game.CreateShortcutMessage.decode
     case 0x29 => game.ChangeShortcutBankMessage.decode
-    case 0x2a => noDecoder(ObjectAttachMessage)
+    case 0x2a => game.ObjectAttachMessage.decode
     case 0x2b => noDecoder(UnknownMessage43)
     case 0x2c => noDecoder(PlanetsideAttributeMessage)
     case 0x2d => game.RequestDestroyMessage.decode
@@ -389,7 +389,7 @@ object GamePacketOpcode extends Enumeration {
     case 0x39 => game.ChangeFireStateMessage_Start.decode
     case 0x3a => game.ChangeFireStateMessage_Stop.decode
     case 0x3b => noDecoder(UnknownMessage59)
-    case 0x3c => noDecoder(GenericCollisionMsg)
+    case 0x3c => game.GenericCollisionMsg.decode
     case 0x3d => game.QuantityUpdateMessage.decode
     case 0x3e => game.ArmorChangedMessage.decode
     case 0x3f => noDecoder(ProjectileStateMessage)
