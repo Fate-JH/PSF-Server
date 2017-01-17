@@ -353,7 +353,7 @@ object GamePacketOpcode extends Enumeration {
     case 0x1b => noDecoder(VehicleStateMessage)
     case 0x1c => noDecoder(FrameVehicleStateMessage)
     case 0x1d => game.GenericObjectStateMsg.decode
-    case 0x1e => noDecoder(ChildObjectStateMessage)
+    case 0x1e => game.ChildObjectStateMessage.decode //TODO
     case 0x1f => game.ActionResultMessage.decode
 
     // OPCODES 0x20-2f
@@ -370,7 +370,7 @@ object GamePacketOpcode extends Enumeration {
     case 0x29 => game.ChangeShortcutBankMessage.decode
     case 0x2a => game.ObjectAttachMessage.decode
     case 0x2b => noDecoder(UnknownMessage43)
-    case 0x2c => noDecoder(PlanetsideAttributeMessage)
+    case 0x2c => game.PlanetsideAttributeMessage.decode
     case 0x2d => game.RequestDestroyMessage.decode
     case 0x2e => noDecoder(UnknownMessage46)
     case 0x2f => game.CharacterCreateRequestMessage.decode
@@ -434,7 +434,7 @@ object GamePacketOpcode extends Enumeration {
 
     // OPCODES 0x60-6f
     case 0x60 => game.FavoritesMessage.decode
-    case 0x61 => noDecoder(ObjectDetectedMessage)
+    case 0x61 => game.ObjectDetectedMessage.decode
     case 0x62 => game.SplashHitMessage.decode
     case 0x63 => noDecoder(SetChatFilterMessage)
     case 0x64 => noDecoder(AvatarSearchCriteriaMessage)

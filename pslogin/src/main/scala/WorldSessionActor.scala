@@ -116,7 +116,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
   val app = CharacterAppearanceData(
     Vector3(674.8438f, 726.789f, 91.15625f),
     19,
-    1,
+    2,
     false,
     4,
     "IlllIIIlllIlIllIlllIllI",
@@ -268,7 +268,6 @@ class WorldSessionActor extends Actor with MDCContextAware {
               sendResponse(PacketCoding.CreateGamePacket(0, LoadMapMessage("ugd03","c3",40100,25,true,3770441820L))) //VS Sanctuary
               sendResponse(PacketCoding.CreateGamePacket(0, ZonePopulationUpdateMessage(PlanetSideGUID(13), 414, 138, 0, 138, 0, 138, 0, 138, 0)))
               sendResponse(PacketCoding.CreateGamePacket(0, objectHex))
-              sendResponse(PacketCoding.CreateGamePacket(0, objectHex2))
               //sendResponse(PacketCoding.CreateGamePacket(0, objectHex3))
 
               // These object_guids are specfic to VS Sanc
@@ -349,52 +348,27 @@ class WorldSessionActor extends Actor with MDCContextAware {
     case msg @ PlayerStateMessageUpstream(avatar_guid, pos, vel, unk1, aim_pitch, unk2, seq_time, unk3, is_crouching, unk4, unk5, unk6, unk7, unk8) =>
       //log.info("PlayerState: " + msg)
       if(is_crouching && !ArmorChangedMessage.changeOnce) {
-        ArmorChangedMessage.changeOnce = is_crouching
+        ArmorChangedMessage.changeOnce = true
         ang += 1
-//        val pkt = PlayerStateMessage(
-//          PlanetSideGUID(89),
-//          Vector3(3674.8438f, 2726.789f, 91.15625f),
-//          Some(Vector3(0.0f,0.0f,0.0f)),
-//          0, 0, 0, 0,
-//          true, false, false, false, false
-//        )
-//        sendResponse(PacketCoding.CreateGamePacket(0, pkt))
-     // sendRawResponse(hex"08 5900 DFD17 B5AEB 380B 0F 80 00 29 90")
-        //sendRawResponse(hex"BE 87 0C BC E7 A1 34 50 64 24 00")
+        sendResponse(PacketCoding.CreateGamePacket(0, objectHex2))
+//        sendResponse(PacketCoding.CreateGamePacket(0, BattleExperienceMessage(avatar_guid, 1000000, 0)))
         //carefully delete inventory
-        sendRawResponse(hex"19 4C00 00") //beamer
-        sendRawResponse(hex"19 4D00 00") //beamer ammo
-        sendRawResponse(hex"19 4E00 00") //suppressor
-        sendRawResponse(hex"19 4F00 00") //suppressor ammo
-        sendRawResponse(hex"19 5000 00") //forceblade
-        sendRawResponse(hex"19 5100 00") //forceblade ammo?
-        sendRawResponse(hex"19 5300 00") //ammo, 9mm
-        sendRawResponse(hex"19 5400 00") //ammo, 9mm
-        sendRawResponse(hex"19 5500 00") //ammo, 9mm
-        sendRawResponse(hex"19 5600 00") //ammo, 9mm ap
-        sendRawResponse(hex"19 5700 00") //ammo, plasma
-        sendRawResponse(hex"19 5800 00") //rek
-//        sendResponse(PacketCoding.CreateGamePacket(0, ArmorChangedMessage(avatar_guid, 2, 1)))
-//        //see capture "last", starting @ line 688
-//        //note: adding a medkit creates the shortcut if it doesn't exist and dispatches an 0x28 packet to the server
-//        //sendRawResponse(hex"18 7C000000 2580 692 5C0F 9E C0000018000") //reaver fury rockets, 2,6
-//        sendRawResponse(hex"18 7C000000 2580 79A 0D06 86 C8000020000") //buckshot, 0,0
-//        sendRawResponse(hex"18 7C000000 2580 0E0 5300 A1   C80001FFFE0") //9mm, 3,0
-//        sendRawResponse(hex"18 7C000000 2580 0E0 1506 BC C8000064000") //9mm, 6,0
-//        sendRawResponse(hex"18 7C000000 2580 0C2 F805 A6 C8000002000") //medkit, 3,5
-//        sendRawResponse(hex"18 7C000000 2580 0C2 F604 B8 C8000002000") //medkit, 5,5
-//        //sendRawResponse(hex"18 87000000 2580 100 690B 80 8800000200008") // ACE, Boomer, pistol slot 1
-//        sendRawResponse(hex"18 7C000000 2580 0C2 1A06 CA C8000002000") //medkit, 7,5
-//        sendRawResponse(hex"18 DC000000 2580 542 4407 80 480000020000C04A941A0B019000000C000") // plasma grenades, pistol slot 1
-//        sendRawResponse(hex"18 97000000 2580 6C2 9F05 81 48000002000080000") //rek, pistol slot 2
-//        sendRawResponse(hex"18 DC000000 2580 501 6A07 B6 480000020000C04A137A0B019000000C000") // jammer grenades, 5,3
-//        sendRawResponse(hex"18 DC000000 2580 501 4406 C8 480000020000C04A13C209019000000C000") // jammer grenades, 7,3
-//        sendRawResponse(hex"18 DC000000 2580 2C9 B905 82 480000020000C041C00C0B0190000078000") // gauss, rifle slot 1
-//        sendRawResponse(hex"18 DC000000 2580 181 F804 89 480000020000C04F35AE0D0190000030000") // sweeper, 0,3
-        //val string = hex"18 27010000 2580 612 a706 82 080000020000c08 1c13a0d0190000078000 13a4701a072000000800" //punisher
-        val obj = ConcurrentFeedWeaponData(0, AmmoBoxData(28, PlanetSideGUID(1693), 0, AmmoBoxData(30)) :: AmmoBoxData(413, PlanetSideGUID(1564), 1, AmmoBoxData(1)) :: Nil)
-        val msg = ObjectCreateMessage(0, 706, PlanetSideGUID(1703), ObjectCreateMessageParent(PlanetSideGUID(75), 2), obj)
-        sendResponse(PacketCoding.CreateGamePacket(0, msg))
+//        sendRawResponse(hex"19 4C00 00") //beamer
+//        sendRawResponse(hex"19 4D00 00") //beamer ammo
+//        sendRawResponse(hex"19 4E00 00") //suppressor
+//        sendRawResponse(hex"19 4F00 00") //suppressor ammo
+//        sendRawResponse(hex"19 5000 00") //forceblade
+//        sendRawResponse(hex"19 5100 00") //forceblade ammo
+//        sendRawResponse(hex"19 5200 00") //thing
+//        sendRawResponse(hex"19 5300 00") //ammo, 9mm
+//        sendRawResponse(hex"19 5400 00") //ammo, 9mm
+//        sendRawResponse(hex"19 5500 00") //ammo, 9mm
+//        sendRawResponse(hex"19 5600 00") //ammo, 9mm ap
+//        sendRawResponse(hex"19 5700 00") //ammo, plasma
+//        sendRawResponse(hex"19 5800 00") //rek
+        //stuff
+//        sendRawResponse(hex"18 7C000000 2580 692 5C0F 9E C0000018000") //reaver fury rockets, 2,6
+//        sendRawResponse(hex"18 87000000 2580 100 690B 80 8800000200008") // ACE, Boomer, pistol slot 1
       }
 
     case msg @ ChatMsg(messagetype, has_wide_contents, recipient, contents, note_contents) =>
@@ -508,7 +482,11 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
     case msg @ MountVehicleMsg(player_guid, vehicle_guid, seat) =>
       log.info("MountVehicleMsg: " + msg)
-      sendResponse(PacketCoding.CreateGamePacket(0, ObjectAttachMessage(vehicle_guid, player_guid, 0)))
+      sendResponse(PacketCoding.CreateGamePacket(0, ObjectAttachMessage(vehicle_guid, player_guid, 0))) //turrets and implant terminal; may explode
+
+    case msg @ DismountVehicleMsg(player_guid, unk1, unk2) =>
+      log.info("DismountVehicle: " + msg)
+      sendResponse(PacketCoding.CreateGamePacket(0, msg)) //"should" be safe
 
     case msg @ DismountBuildingMsg(player_guid, building_guid) =>
       log.info("DismountBuildingMsg: " + msg)
@@ -527,6 +505,9 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
     case msg @ GenericCollisionMsg(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) =>
       log.info("GenericCollision: "+msg)
+
+    case msg @ ChildObjectStateMessage(data) =>
+      log.info("ChildObjectState: "+msg)
 
     case default => log.debug(s"Unhandled GamePacket ${pkt}")
   }
