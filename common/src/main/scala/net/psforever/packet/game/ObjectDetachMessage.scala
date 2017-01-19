@@ -8,6 +8,12 @@ import scodec.codecs._
 
 /**
   * na
+  * @param guid1 na
+  * @param guid2 na
+  * @param pos na
+  * @param unk1 na
+  * @param unk2 na
+  * @param unk3 na
   */
 final case class ObjectDetachMessage(guid1 : PlanetSideGUID,
                                      guid2 : PlanetSideGUID,
