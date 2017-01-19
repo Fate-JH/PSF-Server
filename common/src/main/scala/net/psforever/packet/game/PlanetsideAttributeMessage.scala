@@ -5,6 +5,12 @@ import net.psforever.packet.{GamePacketOpcode, Marshallable, PlanetSideGamePacke
 import scodec.Codec
 import scodec.codecs._
 
+/**
+  * na
+  * @param player_guid the player
+  * @param unk1 na
+  * @param unk2 na
+  */
 final case class PlanetsideAttributeMessage(player_guid : PlanetSideGUID,
                                             unk1 : Int,
                                             unk2 : Long)
