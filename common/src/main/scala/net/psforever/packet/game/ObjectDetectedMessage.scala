@@ -6,6 +6,13 @@ import scodec.{Attempt, Codec, Err}
 import scodec.codecs._
 import shapeless.{::, HNil}
 
+/**
+  * na
+  * @param guid1 na
+  * @param guid2 na
+  * @param unk1 na
+  * @param unk2 na
+  */
 final case class ObjectDetectedMessage(guid1 : PlanetSideGUID,
                                        guid2 : PlanetSideGUID,
                                        unk1 : Int,
@@ -21,7 +28,7 @@ object ObjectDetectedMessage extends Marshallable[ObjectDetectedMessage] {
     ("guid1" | PlanetSideGUID.codec) ::
       ("guid2" | PlanetSideGUID.codec) ::
       ("unk1" | uint8L) ::
-      ("unk2" | listOfN(uintL(6), uint16L))
+      ("unk2" | listOfN(uintL(6), uint16L)) //TODO are these uids?
     ).exmap[ObjectDetectedMessage] (
     {
       case g1 :: g2 :: u1 :: u2 :: HNil =>

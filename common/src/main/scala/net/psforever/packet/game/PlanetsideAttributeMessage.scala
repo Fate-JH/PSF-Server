@@ -5,9 +5,9 @@ import net.psforever.packet.{GamePacketOpcode, Marshallable, PlanetSideGamePacke
 import scodec.Codec
 import scodec.codecs._
 
-final case class PlanetsideAttributeMessage(unk1 : PlanetSideGUID,
-                                            unk2 : Int,
-                                            unk3 : Long)
+final case class PlanetsideAttributeMessage(player_guid : PlanetSideGUID,
+                                            unk1 : Int,
+                                            unk2 : Long)
   extends PlanetSideGamePacket {
   type Packet = PlanetsideAttributeMessage
   def opcode = GamePacketOpcode.PlanetsideAttributeMessage
@@ -16,8 +16,8 @@ final case class PlanetsideAttributeMessage(unk1 : PlanetSideGUID,
 
 object PlanetsideAttributeMessage extends Marshallable[PlanetsideAttributeMessage] {
   implicit val codec : Codec[PlanetsideAttributeMessage] = (
-    ("unk1" | PlanetSideGUID.codec) ::
-      ("unk2" | uint8L) ::
-      ("unk3" | uint32L)
+    ("player_guid" | PlanetSideGUID.codec) ::
+      ("unk1" | uint8L) ::
+      ("unk2" | uint32L)
     ).as[PlanetsideAttributeMessage]
 }
