@@ -1,26 +1,30 @@
 // Copyright (c) 2016 PSForever.net to present
 package net.psforever.packet.game
 
-import net.psforever.packet.{GamePacketOpcode, Marshallable, PlanetSideGamePacket}
+import net.psforever.packet.{GamePacketOpcode, Marshallable, PacketHelpers, PlanetSideGamePacket}
+import net.psforever.types.TransactionType
 import scodec.Codec
 import scodec.codecs._
 
-
-final case class ItemTransactionResultMessage(terminal_guid : PlanetSideGUID,
-                                              Unk1 : Int,
-                                              Unk2 : Boolean,
-                                              Unk3 : Int)
+final case class ItemTransactionMessage(terminal_guid : PlanetSideGUID,
+                                        transaction_type : TransactionType.Value,
+                                        item_page : Int,
+                                        item_name : String,
+                                        unk1 : Int,
+                                        item_guid : PlanetSideGUID)
   extends PlanetSideGamePacket {
-  type Packet = ItemTransactionResultMessage
-  def opcode = GamePacketOpcode.ItemTransactionResultMessage
-  def encode = ItemTransactionResultMessage.encode(this)
+  type Packet = ItemTransactionMessage
+  def opcode = GamePacketOpcode.ItemTransactionMessage
+  def encode = ItemTransactionMessage.encode(this)
 }
 
-object ItemTransactionResultMessage extends Marshallable[ItemTransactionResultMessage] {
-  implicit val codec : Codec[ItemTransactionResultMessage] = (
+object ItemTransactionMessage extends Marshallable[ItemTransactionMessage] {
+  implicit val codec : Codec[ItemTransactionMessage] = (
     ("terminal_guid" | PlanetSideGUID.codec) ::
-      ("Unk1" | uintL(1)) ::
-      ("Unk2" | bool) ::
-      ("Unk3" | uint8L)
-    ).as[ItemTransactionResultMessage]
+      ("transaction_type" | TransactionType.codec) ::
+      ("item_page" | uint16L) ::
+      ("item_name" | PacketHelpers.encodedStringAligned(5)) ::
+      ("unk1" | uint8L) ::
+      ("item_guid" | PlanetSideGUID.codec)
+    ).as[ItemTransactionMessage]
 }
