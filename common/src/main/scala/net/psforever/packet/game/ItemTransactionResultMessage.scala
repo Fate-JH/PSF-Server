@@ -1,30 +1,35 @@
 // Copyright (c) 2016 PSForever.net to present
 package net.psforever.packet.game
 
-import net.psforever.packet.{GamePacketOpcode, Marshallable, PacketHelpers, PlanetSideGamePacket}
+import net.psforever.packet.{GamePacketOpcode, Marshallable, PlanetSideGamePacket}
 import net.psforever.types.TransactionType
 import scodec.Codec
 import scodec.codecs._
 
-final case class ItemTransactionMessage(terminal_guid : PlanetSideGUID,
-                                        transaction_type : TransactionType.Value,
-                                        item_page : Int,
-                                        item_name : String,
-                                        unk1 : Int,
-                                        item_guid : PlanetSideGUID)
+/**
+  * Dispatch to the client in response to an `ItemRequestMessage`, roughly after the request has been fulfilled.
+  * This TCP-like "after" behavior is typically supported by pushing this packet at the end of the `MultiPacket` that fulfills the request.
+  * @param terminal_guid the terminal used
+  * @param transaction_type the type of transaction
+  * @param success whether the transaction was a success
+  * @param error an error code, if applicable;
+  *              no error by default
+  */
+final case class ItemTransactionResultMessage(terminal_guid : PlanetSideGUID,
+                                              transaction_type : TransactionType.Value,
+                                              success : Boolean,
+                                              error : Int = 0)
   extends PlanetSideGamePacket {
-  type Packet = ItemTransactionMessage
-  def opcode = GamePacketOpcode.ItemTransactionMessage
-  def encode = ItemTransactionMessage.encode(this)
+  type Packet = ItemTransactionResultMessage
+  def opcode = GamePacketOpcode.ItemTransactionResultMessage
+  def encode = ItemTransactionResultMessage.encode(this)
 }
 
-object ItemTransactionMessage extends Marshallable[ItemTransactionMessage] {
-  implicit val codec : Codec[ItemTransactionMessage] = (
+object ItemTransactionResultMessage extends Marshallable[ItemTransactionResultMessage] {
+  implicit val codec : Codec[ItemTransactionResultMessage] = (
     ("terminal_guid" | PlanetSideGUID.codec) ::
       ("transaction_type" | TransactionType.codec) ::
-      ("item_page" | uint16L) ::
-      ("item_name" | PacketHelpers.encodedStringAligned(5)) ::
-      ("unk1" | uint8L) ::
-      ("item_guid" | PlanetSideGUID.codec)
-    ).as[ItemTransactionMessage]
+      ("success" | bool) ::
+      ("error" | uint8L)
+    ).as[ItemTransactionResultMessage]
 }
