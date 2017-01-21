@@ -326,6 +326,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
               sendRawResponse(hex"BE 88 4D B5 6C 46 AE D0 A0 04 00")
               sendRawResponse(hex"08 4B 00 84 DB 56 C4 6A ED 0A 00 00 00 00 10 1B 83 04 1F F6 8A BE 5D 57 A2 00 00 00 00 AF 00 0F 00 1B 82 04 1F FB CA BF 96 AF 02 00 00 00 00 AF 00 0F 00 1B 81 04 1F E6 F4 BF 32 F7 22 00 00 00 00 AF 00 0F 00")
               sendResponse(PacketCoding.CreateGamePacket(0, SetCurrentAvatarMessage(guid,0,0)))
+              sendResponse(PacketCoding.CreateGamePacket(0, FavoritesMessage(0, guid, 0, "Sample Loadout Entry", Some(1))))
               sendResponse(PacketCoding.CreateGamePacket(0, ChatMsg(ChatMessageType.CMT_EXPANSIONS,true,"","1 on",None)))
 
               import scala.concurrent.duration._
