@@ -430,7 +430,7 @@ object GamePacketOpcode extends Enumeration {
     case 0x5c => noDecoder(AIDamage)
     case 0x5d => noDecoder(DeployObjectMessage)
     case 0x5e => noDecoder(FavoritesRequest)
-    case 0x5f => noDecoder(FavoritesResponse)
+    case 0x5f => game.FavoritesResponse.decode
 
     // OPCODES 0x60-6f
     case 0x60 => game.FavoritesMessage.decode
