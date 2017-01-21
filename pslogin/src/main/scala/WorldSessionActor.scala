@@ -510,6 +510,9 @@ class WorldSessionActor extends Actor with MDCContextAware {
     case msg @ ChildObjectStateMessage(data) =>
       log.info("ChildObjectState: "+msg)
 
+    case msg @ BugReportMessage(major, minor, date, btype, repeat, unk, zone, pos, sum, desc) =>
+      log.info("Bug Report: " + msg)
+
     case default => log.debug(s"Unhandled GamePacket ${pkt}")
   }
 
