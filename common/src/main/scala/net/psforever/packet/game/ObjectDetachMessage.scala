@@ -8,15 +8,15 @@ import scodec.codecs._
 
 /**
   * na
-  * @param guid1 na
-  * @param guid2 na
+  * @param parent_guid the object previously containing the child object
+  * @param child_guid the child object
   * @param pos na
   * @param unk1 na
   * @param unk2 na
   * @param unk3 na
   */
-final case class ObjectDetachMessage(guid1 : PlanetSideGUID,
-                                     guid2 : PlanetSideGUID,
+final case class ObjectDetachMessage(parent_guid : PlanetSideGUID,
+                                     child_guid : PlanetSideGUID,
                                      pos : Vector3,
                                      unk1 : Int,
                                      unk2 : Int,
@@ -29,8 +29,8 @@ final case class ObjectDetachMessage(guid1 : PlanetSideGUID,
 
 object ObjectDetachMessage extends Marshallable[ObjectDetachMessage] {
   implicit val codec : Codec[ObjectDetachMessage] = (
-    ("guid1" | PlanetSideGUID.codec) ::
-      ("guid2" | PlanetSideGUID.codec) ::
+    ("parent_guid" | PlanetSideGUID.codec) ::
+      ("child_guid" | PlanetSideGUID.codec) ::
       ("pos" | Vector3.codec_pos) ::
       ("unk1" | uint8L) ::
       ("unk2" | uint8L) ::
