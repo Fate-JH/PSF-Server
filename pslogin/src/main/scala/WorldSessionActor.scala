@@ -328,6 +328,12 @@ class WorldSessionActor extends Actor with MDCContextAware {
               sendResponse(PacketCoding.CreateGamePacket(0, SetCurrentAvatarMessage(guid,0,0)))
               sendResponse(PacketCoding.CreateGamePacket(0, FavoritesMessage(0, guid, 0, "Sample Loadout Entry", Some(1))))
               sendResponse(PacketCoding.CreateGamePacket(0, ChatMsg(ChatMessageType.CMT_EXPANSIONS,true,"","1 on",None)))
+              sendResponse(PacketCoding.CreateGamePacket(0, CreateShortcutMessage(guid, 1, 0, true, Shortcut.MEDKIT)))
+              sendResponse(PacketCoding.CreateGamePacket(0, CreateShortcutMessage(guid, 2, 0, true, Shortcut.ENHANCED_TARGETING)))
+              sendResponse(PacketCoding.CreateGamePacket(0, CreateShortcutMessage(guid, 3, 0, true, Shortcut.DARKLIGHT_VISION)))
+              sendResponse(PacketCoding.CreateGamePacket(0, CreateShortcutMessage(guid, 4, 0, true, Shortcut.SURGE)))
+              sendResponse(PacketCoding.CreateGamePacket(0, ChangeShortcutBankMessage(guid, 0)))
+              sendResponse(PacketCoding.CreateGamePacket(0, BattleExperienceMessage(guid, 1000000, 0)))
 
               import scala.concurrent.duration._
               import scala.concurrent.ExecutionContext.Implicits.global
@@ -348,11 +354,10 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
     case msg @ PlayerStateMessageUpstream(avatar_guid, pos, vel, unk1, aim_pitch, unk2, seq_time, unk3, is_crouching, unk4, unk5, unk6, unk7, unk8) =>
       //log.info("PlayerState: " + msg)
-      if(is_crouching && !ArmorChangedMessage.changeOnce) {
-        ArmorChangedMessage.changeOnce = true
+      if(is_crouching != ArmorChangedMessage.changeOnce) {
+        ArmorChangedMessage.changeOnce = is_crouching
         ang += 1
-        sendResponse(PacketCoding.CreateGamePacket(0, objectHex2))
-//        sendResponse(PacketCoding.CreateGamePacket(0, BattleExperienceMessage(avatar_guid, 1000000, 0)))
+//        sendResponse(PacketCoding.CreateGamePacket(0, objectHex2))
         //carefully delete inventory
 //        sendRawResponse(hex"19 4C00 00") //beamer
 //        sendRawResponse(hex"19 4D00 00") //beamer ammo
