@@ -1,17 +1,12 @@
 // Copyright (c) 2016 PSForever.net to present
+package net.psforever.actors.udp
+
 import java.net.{InetAddress, InetSocketAddress}
 
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props, Terminated}
-import akka.io._
-import scodec.bits._
+import akka.io.{IO, Udp}
 import scodec.interop.akka._
-import akka.util.ByteString
-
-final case class ReceivedPacket(msg : ByteVector, from : InetSocketAddress)
-final case class SendPacket(msg : ByteVector, to : InetSocketAddress)
-final case class Hello()
-final case class HelloFriend(sessionId : Long, next: ActorRef)
 
 class UdpListener(nextActorProps : Props,
                   nextActorName : String,

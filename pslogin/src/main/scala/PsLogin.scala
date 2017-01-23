@@ -9,6 +9,9 @@ import ch.qos.logback.core.joran.spi.JoranException
 import ch.qos.logback.core.status._
 import ch.qos.logback.core.util.StatusPrinter
 import com.typesafe.config.ConfigFactory
+import net.psforever.actors.{CryptoSessionActor, LoginConfig, LoginSessionActor, WorldSessionActor}
+import net.psforever.actors.session.{SessionPipeline, SessionRouter}
+import net.psforever.actors.udp.UdpListener
 import net.psforever.crypto.CryptoInterface
 import org.slf4j
 import org.fusesource.jansi.Ansi._
@@ -167,7 +170,7 @@ object PsLogin {
       * actor in the chain. For an incoming packet, this is a player session handler. For an outgoing packet
       * this is the session router, which returns the packet to the sending host.
       *
-      * See SessionRouter.scala for a diagram
+      * See net.psforever.actors.SessionRouter.scala for a diagram
       */
     val loginTemplate = List(
       SessionPipeline("crypto-session-", Props[CryptoSessionActor]),
@@ -185,7 +188,7 @@ object PsLogin {
     // Uncomment for network simulation
     // TODO: make this config or command flag
     /*
-    val netParams = NetworkSimulatorParameters(
+    val netParams = net.psforever.actors.udp.NetworkSimulatorParameters(
       packetLoss = 0.02,
       packetDelay = 500,
       packetReorderingChance = 0.005,

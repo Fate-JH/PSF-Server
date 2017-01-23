@@ -1,16 +1,19 @@
 // Copyright (c) 2016 PSForever.net to present
-import java.net.{InetAddress, InetSocketAddress}
+package net.psforever.actors
 
+import akka.actor.MDCContextAware.Implicits._
 import akka.actor.{Actor, ActorRef, Cancellable, MDCContextAware}
-import net.psforever.packet.{PlanetSideGamePacket, _}
+import net.psforever.actors.crypto.DropCryptoSession
+import net.psforever.actors.session.{DropSession, RawPacket}
+import net.psforever.actors.udp.HelloFriend
 import net.psforever.packet.control._
 import net.psforever.packet.game._
+import net.psforever.packet.game.objectcreate._
+import net.psforever.packet.{PlanetSideGamePacket, _}
+import net.psforever.types.{ChatMessageType, Vector3}
+import org.log4s.MDC
 import scodec.Attempt.{Failure, Successful}
 import scodec.bits._
-import org.log4s.MDC
-import MDCContextAware.Implicits._
-import net.psforever.packet.game.objectcreate._
-import net.psforever.types.{ChatMessageType, Vector3}
 
 class WorldSessionActor extends Actor with MDCContextAware {
   private[this] val log = org.log4s.getLogger
@@ -157,7 +160,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
       val clientVersion = s"Client Version: ${majorVersion}.${minorVersion}.${revision}, ${buildDate}"
 
-      log.info(s"New world login to ${server} with Token:${token}. ${clientVersion}")
+      log.info(s"net.psforever.actors.New world login to ${server} with Token:${token}. ${clientVersion}")
 
       // ObjectCreateMessage
       sendResponse(PacketCoding.CreateGamePacket(0, objectHex))
@@ -217,8 +220,8 @@ class WorldSessionActor extends Actor with MDCContextAware {
               sendResponse(PacketCoding.CreateGamePacket(0, SetCurrentAvatarMessage(guid,0,0)))
               sendResponse(PacketCoding.CreateGamePacket(0, CreateShortcutMessage(guid, 1, 0, true, Shortcut.MEDKIT)))
 
-              import scala.concurrent.duration._
               import scala.concurrent.ExecutionContext.Implicits.global
+              import scala.concurrent.duration._
               clientKeepAlive = context.system.scheduler.schedule(0 seconds, 500 milliseconds, self, PokeClient())
           }
         case default =>

@@ -1,23 +1,13 @@
 // Copyright (c) 2016 PSForever.net to present
+package net.psforever.actors.session
 
 import java.net.InetSocketAddress
 
-import akka.actor._
-import org.log4s.MDC
-import scodec.bits._
-
-import akka.actor.{ActorContext, ActorRef, PoisonPill}
+import akka.actor.{ActorContext, ActorRef, MDCContextAware, PoisonPill}
 import com.github.nscala_time.time.Imports._
+import net.psforever.actors.udp.{HelloFriend, SendPacket}
+import scodec.bits.ByteVector
 import MDCContextAware.Implicits._
-
-sealed trait SessionState
-final case class New() extends SessionState
-final case class Related() extends SessionState
-final case class Handshaking() extends SessionState
-final case class Established() extends SessionState
-final case class Closing() extends SessionState
-final case class Closed() extends SessionState
-
 
 class Session(val sessionId : Long,
               val socketAddress : InetSocketAddress,

@@ -1,14 +1,12 @@
 // Copyright (c) 2016 PSForever.net to present
-import java.net.{InetAddress, InetSocketAddress}
+package net.psforever.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, DiagnosticActorLogging, Identify, MDCContextAware}
-import net.psforever.crypto.CryptoInterface.{CryptoState, CryptoStateWithMAC}
+import akka.actor.{Actor, ActorRef, MDCContextAware}
+import net.psforever.crypto.CryptoInterface.CryptoStateWithMAC
 import net.psforever.crypto.CryptoInterface
 import net.psforever.packet._
 import scodec.Attempt.{Failure, Successful}
 import scodec.bits._
-import scodec.{Attempt, Codec, Err}
-import scodec.codecs.{bytes, uint16L, uint8L}
 import java.security.SecureRandom
 
 import net.psforever.packet.control.{ClientStart, ServerStart, TeardownConnection}
@@ -16,9 +14,9 @@ import net.psforever.packet.crypto._
 import net.psforever.packet.game.PingMsg
 import org.log4s.MDC
 import MDCContextAware.Implicits._
-
-sealed trait CryptoSessionAPI
-final case class DropCryptoSession() extends CryptoSessionAPI
+import net.psforever.actors.crypto.{CryptoSessionAPI, DropCryptoSession}
+import net.psforever.actors.session.{RawPacket, ResponsePacket, SessionRouterAPI}
+import net.psforever.actors.udp.HelloFriend
 
 /**
   * Actor that stores crypto state for a connection, appropriately encrypts and decrypts packets,
@@ -254,7 +252,7 @@ class CryptoSessionActor extends Actor with MDCContextAware {
                   case Failure(e) =>
                     log.error("Failed to decode encrypted packet: " + e)
                 }
-              case default => failWithError(s"Unexpected packet type $default in state Established")
+              case default => failWithError(s"Unexpected packet type $default in state net.psforever.actors.Established")
 
             }
           case Failure(e) => log.error("Could not decode raw packet: " + e)
@@ -278,7 +276,7 @@ class CryptoSessionActor extends Actor with MDCContextAware {
       handleEstablishedPacket(from, game)
     case sessionAPI : SessionRouterAPI =>
       leftRef !> sessionAPI
-    case default => failWithError(s"Invalid message '$default' received in state Established")
+    case default => failWithError(s"Invalid message '$default' received in state net.psforever.actors.Established")
   }
 
   def failWithError(error : String) = {
@@ -316,10 +314,10 @@ class CryptoSessionActor extends Actor with MDCContextAware {
     if(from == self) {
       rightRef !> cont
     } else if(from == rightRef) { // processing a completed packet from the right. encrypt
-      val packet = PacketCoding.encryptPacket(cryptoState.get, cont).require
+    val packet = PacketCoding.encryptPacket(cryptoState.get, cont).require
       sendResponse(packet)
     } else {
-      log.error(s"Invalid sender when handling a message in Established ${from}")
+      log.error(s"Invalid sender when handling a message in net.psforever.actors.Established ${from}")
     }
   }
 
@@ -365,3 +363,4 @@ class CryptoSessionActor extends Actor with MDCContextAware {
     ByteVector.view(array)
   }
 }
+

@@ -1,5 +1,5 @@
 // Copyright (c) 2016 PSForever.net to present
-// Taken from http://code.hootsuite.com/logging-contextual-info-in-an-asynchronous-scala-application/
+package net.psforever.actors.mdc
 
 import org.slf4j.MDC
 
@@ -44,22 +44,5 @@ object MDCPropagatingExecutionContext {
     // Convenience wrapper around the Scala global ExecutionContext so you can just do:
     // import MDCPropagatingExecutionContext.Implicits.global
     implicit lazy val global = MDCPropagatingExecutionContextWrapper(ExecutionContext.Implicits.global)
-  }
-}
-
-/**
-  * Wrapper around an existing ExecutionContext that makes it propagate MDC information.
-  */
-class MDCPropagatingExecutionContextWrapper(wrapped: ExecutionContext)
-  extends ExecutionContext with MDCPropagatingExecutionContext {
-
-  override def execute(r: Runnable): Unit = wrapped.execute(r)
-
-  override def reportFailure(t: Throwable): Unit = wrapped.reportFailure(t)
-}
-
-object MDCPropagatingExecutionContextWrapper {
-  def apply(wrapped: ExecutionContext): MDCPropagatingExecutionContextWrapper = {
-    new MDCPropagatingExecutionContextWrapper(wrapped)
   }
 }

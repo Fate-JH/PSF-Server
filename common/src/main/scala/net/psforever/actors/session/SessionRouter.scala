@@ -1,26 +1,17 @@
 // Copyright (c) 2016 PSForever.net to present
+package net.psforever.actors.session
+
 import java.net.InetSocketAddress
 
-import akka.actor._
-import org.log4s.MDC
-import scodec.bits._
-
-import scala.collection.mutable
-import MDCContextAware.Implicits._
-import akka.actor.MDCContextAware.MdcMsg
 import akka.actor.SupervisorStrategy.Stop
+import akka.actor.{Actor, ActorRef, MDCContextAware, OneForOneStrategy, Terminated}
+import net.psforever.actors.udp.{Hello, ReceivedPacket}
 import net.psforever.packet.PacketCoding
 import net.psforever.packet.control.ConnectionClose
-
+import org.log4s.MDC
 import scala.concurrent.duration._
 
-sealed trait SessionRouterAPI
-final case class RawPacket(data : ByteVector) extends SessionRouterAPI
-final case class ResponsePacket(data : ByteVector) extends SessionRouterAPI
-final case class DropSession(id : Long, reason : String) extends SessionRouterAPI
-final case class SessionReaper() extends SessionRouterAPI
-
-case class SessionPipeline(nameTemplate : String, props : Props)
+import scala.collection.mutable
 
 /**
   * Login sessions are divided between two actors. The crypto session actor transparently handles all of the cryptographic
@@ -28,11 +19,11 @@ case class SessionPipeline(nameTemplate : String, props : Props)
   * will be passed on to the login session actor. This actor has important state that is used to maintain the login
   * session.
   *
-  *                      > PlanetSide Session Pipeline <
+  *                      > PlanetSide net.psforever.actors.Session Pipeline <
   *
   *            read()                  route                decrypt
-  * UDP Socket -----> [Session Router] -----> [Crypto Actor] -----> [Session Actor]
-  *      ^              |          ^           |        ^                 |
+  * UDP Socket -----> [net.psforever.actors.Session Router] -----> [Crypto Actor] -----> [net.psforever.actors.Session Actor]
+  *     /|\             |         /|\          |       /|\                |
   *      |     write()  |          |  encrypt  |        |   response      |
   *      +--------------+          +-----------+        +-----------------+
   **/
@@ -150,7 +141,7 @@ class SessionRouter(role : String, pipeline : List[SessionPipeline]) extends Act
       sessionByActor{actor} = session
     }
 
-    log.info(s"New session ID=${id} from " + address.toString)
+    log.info(s"net.psforever.actors.New session ID=${id} from " + address.toString)
 
     session
   }

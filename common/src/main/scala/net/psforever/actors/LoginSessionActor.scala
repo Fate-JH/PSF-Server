@@ -1,17 +1,20 @@
 // Copyright (c) 2016 PSForever.net to present
-import java.net.{InetAddress, InetSocketAddress}
+package net.psforever.actors
 
+import java.net.InetSocketAddress
+
+import akka.actor.MDCContextAware.Implicits._
 import akka.actor.{Actor, ActorRef, Cancellable, MDCContextAware}
-import net.psforever.packet.{PlanetSideGamePacket, _}
+import net.psforever.actors.session.{DropSession, RawPacket}
+import net.psforever.actors.udp.HelloFriend
 import net.psforever.packet.control._
 import net.psforever.packet.game._
+import net.psforever.packet.{PlanetSideGamePacket, _}
 import org.log4s.MDC
 import scodec.Attempt.{Failure, Successful}
 import scodec.bits._
-import MDCContextAware.Implicits._
 
 import scala.concurrent.duration._
-import scala.util.Random
 
 class LoginSessionActor extends Actor with MDCContextAware {
   private[this] val log = org.log4s.getLogger
@@ -112,9 +115,9 @@ class LoginSessionActor extends Actor with MDCContextAware {
         val clientVersion = s"Client Version: ${majorVersion}.${minorVersion}.${revision}, ${buildDate}"
 
         if(token.isDefined)
-          log.info(s"New login UN:$username Token:${token.get}. ${clientVersion}")
+          log.info(s"net.psforever.actors.New login UN:$username Token:${token.get}. ${clientVersion}")
         else
-          log.info(s"New login UN:$username PW:$password. ${clientVersion}")
+          log.info(s"net.psforever.actors.New login UN:$username PW:$password. ${clientVersion}")
 
         val newToken = token.getOrElse("THISISMYTOKENYES")
         val response = LoginRespMessage(newToken, hex"00000000 18FABE0C 00000000 00000000",

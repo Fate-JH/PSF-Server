@@ -1,6 +1,7 @@
 // Copyright (c) 2016 PSForever.net to present
-// Taken from http://code.hootsuite.com/logging-contextual-info-in-an-asynchronous-scala-application/
 package akka.actor
+//Just to clarify, these classes are not located in the same package as the physical file.
+//It should be in akka.actor
 
 import akka.util.Timeout
 import org.slf4j.MDC
