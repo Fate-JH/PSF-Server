@@ -5,44 +5,61 @@ import org.slf4j.MDC
 
 import scala.concurrent.ExecutionContext
 
+/**
+  * A series of created anonymous classes that ultimately results in an `ExecutionContext`.
+  * The ultimate executor loads a `Runnable` under a specific `MDC` signature and reports its thrown `Exception`s.
+  * @see http://code.hootsuite.com/logging-contextual-info-in-an-asynchronous-scala-application/
+  */
 trait MDCPropagatingExecutionContext extends ExecutionContext {
-  // name the self-type "self" so we can refer to it inside the nested class
-  self =>
+  self => //name the self-type "self" so we can refer to it inside the nested class
 
-  override def prepare(): ExecutionContext = new ExecutionContext {
-    // Save the call-site MDC state
-    val context = MDC.getCopyOfContextMap
+  /**
+    * Create an `ExecutionContext` for the purpose of uniquely instancing a `Runnable`.
+    * @return an `ExecutionContext` that serves our needs
+    * @see `java.lang.Thread`
+    */
+  override def prepare() : ExecutionContext = new ExecutionContext {
+    val context = MDC.getCopyOfContextMap //Save the call-site MDC state
 
-    def execute(r: Runnable): Unit = self.execute(new Runnable {
-      def run(): Unit = {
-        // Save the existing execution-site MDC state
-        val oldContext = MDC.getCopyOfContextMap
+    /**
+      * What happens when this context is executed.
+      * @param r our work that needs to run
+      * @see `java.lang.Runnable`
+      */
+    def execute(r: Runnable) : Unit = self.execute(new Runnable {
+      /**
+        * Manage the `MDC` context and then start up the `Runnable`.
+        */
+      def run() : Unit = {
+        val oldContext = MDC.getCopyOfContextMap //Save the existing execution-site MDC state
         try {
-          // Set the call-site MDC state into the execution-site MDC
-          if (context != null )
-            MDC.setContextMap(context)
-          else
-            MDC.clear()
-
+          MDCPropagatingExecutionContext.setMDCContext(context) //set the call-site MDC state into the execution-site MDC
           r.run()
-        } finally {
-          // Restore the existing execution-site MDC state
-          if (oldContext != null)
-            MDC.setContextMap(oldContext)
-          else
-            MDC.clear()
+        }
+        finally {
+          MDCPropagatingExecutionContext.setMDCContext(oldContext) //restore the existing execution-site MDC state
         }
       }
     })
 
-    def reportFailure(t: Throwable): Unit = self.reportFailure(t)
+    /**
+      * If we have failed, report what went wrong.
+      * @param t an `Exception` or `Error` that we encountered
+      * @see `java.lang.Throwable`
+      */
+    def reportFailure(t: Throwable) : Unit =
+      self.reportFailure(t)
   }
 }
 
 object MDCPropagatingExecutionContext {
   object Implicits {
-    // Convenience wrapper around the Scala global ExecutionContext so you can just do:
-    // import MDCPropagatingExecutionContext.Implicits.global
+    /*
+    Convenience wrapper around the Scala global ExecutionContext so you can just do:
+    import MDCPropagatingExecutionContext.Implicits.global
+     */
     implicit lazy val global = MDCPropagatingExecutionContextWrapper(ExecutionContext.Implicits.global)
   }
+
+  def setMDCContext(context : java.util.Map[String, String]) = akka.actor.MDCContextAware.setMDCContext(context)
 }

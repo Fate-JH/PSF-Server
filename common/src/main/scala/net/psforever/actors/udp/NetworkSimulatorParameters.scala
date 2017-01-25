@@ -1,8 +1,10 @@
 // Copyright (c) 2016 PSForever.net to present
 package net.psforever.actors.udp
 
-/** Parameters for the Network simulator
-  *
+/**
+  * Parameters for the Network simulator.
+  * In the end, it's just a system of probabilities to be checked against.
+  * if that check passes, the action it represents happens to the artificial message.
   * @param packetLoss The percentage from [0.0, 1.0] that a packet will be lost
   * @param packetDelay The end-to-end delay (ping) of all packets
   * @param packetReorderingChance The percentage from [0.0, 1.0] that a packet will be reordered

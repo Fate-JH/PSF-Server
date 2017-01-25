@@ -16,7 +16,7 @@ import scodec.Attempt.{Failure, Successful}
 import scodec.bits._
 
 class WorldSessionActor extends Actor with MDCContextAware {
-  private[this] val log = org.log4s.getLogger
+  private[this] val log = org.log4s.getLogger("WorldSessionActor")
 
   private case class PokeClient()
 
@@ -160,7 +160,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
       val clientVersion = s"Client Version: ${majorVersion}.${minorVersion}.${revision}, ${buildDate}"
 
-      log.info(s"net.psforever.actors.New world login to ${server} with Token:${token}. ${clientVersion}")
+      log.info(s"New world login to ${server} with Token:${token}. ${clientVersion}")
 
       // ObjectCreateMessage
       sendResponse(PacketCoding.CreateGamePacket(0, objectHex))

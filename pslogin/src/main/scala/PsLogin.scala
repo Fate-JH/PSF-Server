@@ -170,8 +170,19 @@ object PsLogin {
       * actor in the chain. For an incoming packet, this is a player session handler. For an outgoing packet
       * this is the session router, which returns the packet to the sending host.
       *
-      * See net.psforever.actors.SessionRouter.scala for a diagram
-      */
+      * Login sessions are divided between two actors. The crypto session actor transparently handles all of the cryptographic
+      * setup of the connection. Once a correct crypto session has been established, all packets, after being decrypted
+      * will be passed on to the login session actor. This actor has important state that is used to maintain the login
+      * session.
+      *
+      *                      > PlanetSide net.psforever.actors.Session Pipeline <
+      *
+      *            read()                  route                decrypt
+      * UDP Socket -----> [Session Router] -----> [Crypto Actor] -----> [Session Actor]
+      *     /|\             |         /|\          |       /|\                |
+      *      |     write()  |          |  encrypt  |        |   response      |
+      *      +--------------+          +-----------+        +-----------------+
+      **/
     val loginTemplate = List(
       SessionPipeline("crypto-session-", Props[CryptoSessionActor]),
       SessionPipeline("login-session-", Props[LoginSessionActor])
@@ -196,11 +207,10 @@ object PsLogin {
     )
     */
 
-    /** Create two actors for handling the login and world server endpoints */
     loginRouter = Props(new SessionRouter("Login", loginTemplate))
     worldRouter = Props(new SessionRouter("World", worldTemplate))
-    loginListener = system.actorOf(Props(new UdpListener(loginRouter, "login-session-router", LoginConfig.serverIpAddress, loginServerPort, None)), "login-udp-endpoint")
-    worldListener = system.actorOf(Props(new UdpListener(worldRouter, "world-session-router", LoginConfig.serverIpAddress, worldServerPort, None)), "world-udp-endpoint")
+    loginListener = system.actorOf(Props(new UdpListener(loginRouter, "login-session-router", LoginConfig.serverIpAddress, loginServerPort)), "login-udp-endpoint")
+    worldListener = system.actorOf(Props(new UdpListener(worldRouter, "world-session-router", LoginConfig.serverIpAddress, worldServerPort)), "world-udp-endpoint")
 
     logger.info(s"NOTE: Set client.ini to point to ${LoginConfig.serverIpAddress.getHostAddress}:$loginServerPort")
 
