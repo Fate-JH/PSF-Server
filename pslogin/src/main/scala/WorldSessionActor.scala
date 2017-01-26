@@ -114,7 +114,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
   //val objectHex = hex"18 570C0000 BC8 4B00 00F00 00F01 8014 0 00 0 20 2 40 00 0970 49006C006C006C004900490049006C006C006C0049006C0049006C006C0049006C006C006C0049006C006C004900 82 01 40 76 1E 80 80 00 00 00 00 00 3FFFC 0 00 00 00 20 00 00 0 10 00 3 03 FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFC 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03 FF FF FF FD FF FE 00 01 00 0F FF FF FF FE 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 C0 00 42 C5 46 86 C7 00 00 00 80 00 00 12 40 7870655F73616E6374756172795F68656C70 90 7870655F74685F666972656D6F646573 8B 757365645F6265616D6572 85 6D61703133 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 0A 23 02 60 04 04 40 00 00 10 00 06 02 08 14 D0 08 0C 80 00 02 00 02 6B 4E 00 82 88 00 00 02 00 00 C0 41 C0 9E 01 01 90 00 00 64 00 44 2A 00 10 91 00 00 00 40 00 18 08 38 94 40 20 32 00 00 00 80 19 05 48 02 17 20 00 00 08 00 70 29 80 43 64 00 00 32 00 0E 05 40 08 9C 80 00 06 40 01 C0 AA 01 19 90 00 00 C8 00 3A 15 80 28 72 00 00 19 00 04 0A B8 05 26 40 00 03 20 06 C2 59 00 A7 88 00 00 02 00 00 80 00 00"
   //currently, the character's starting BEP is discarded due to unknown bit format
   val app = CharacterAppearanceData(
-    Vector3(674.8438f, 726.789f, 91.15625f),
+    Vector3(3674.8438f, 2726.789f, 91.15625f),
     19,
     2,
     false,
@@ -265,9 +265,10 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
               // LoadMapMessage 13714 in mossy .gcap
               // XXX: hardcoded shit
-              sendResponse(PacketCoding.CreateGamePacket(0, LoadMapMessage("ugd03","c3",40100,25,true,3770441820L))) //VS Sanctuary
+              sendResponse(PacketCoding.CreateGamePacket(0, LoadMapMessage("map13","home3",40100,25,true,3770441820L))) //VS Sanctuary
               sendResponse(PacketCoding.CreateGamePacket(0, ZonePopulationUpdateMessage(PlanetSideGUID(13), 414, 138, 0, 138, 0, 138, 0, 138, 0)))
               sendResponse(PacketCoding.CreateGamePacket(0, objectHex))
+              sendResponse(PacketCoding.CreateGamePacket(0, objectHex2))
               //sendResponse(PacketCoding.CreateGamePacket(0, objectHex3))
 
               // These object_guids are specfic to VS Sanc
@@ -357,7 +358,6 @@ class WorldSessionActor extends Actor with MDCContextAware {
       if(is_crouching != ArmorChangedMessage.changeOnce) {
         ArmorChangedMessage.changeOnce = is_crouching
         ang += 1
-//        sendResponse(PacketCoding.CreateGamePacket(0, objectHex2))
         //carefully delete inventory
 //        sendRawResponse(hex"19 4C00 00") //beamer
 //        sendRawResponse(hex"19 4D00 00") //beamer ammo
