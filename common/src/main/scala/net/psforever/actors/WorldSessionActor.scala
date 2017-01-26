@@ -15,97 +15,141 @@ import org.log4s.MDC
 import scodec.Attempt.{Failure, Successful}
 import scodec.bits._
 
+/**
+  * At the moment, `WorldSessionActor` acts like a developmental debug mode.
+  */
 class WorldSessionActor extends Actor with MDCContextAware {
   private[this] val log = org.log4s.getLogger("WorldSessionActor")
-
-  private case class PokeClient()
 
   var sessionId : Long = 0
   var leftRef : ActorRef = ActorRef.noSender
   var rightRef : ActorRef = ActorRef.noSender
 
+  private case class PokeClient()
   var clientKeepAlive : Cancellable = null
 
-  override def postStop() = {
-    if(clientKeepAlive != null)
-      clientKeepAlive.cancel()
-  }
-
+  /**
+    * The initial behavior demonstrated by this `Actor`.
+    * Pass to the method `Initializing`.
+    * @return a partial function
+    */
   def receive = Initializing
 
+  /**
+    * The initial behavior demonstrated by this `Actor`.
+    * Upon being greeted, the `Session` begins handling packets that are passed in between parent and child `Actors.`
+    * @return a partial function
+    * @see `Started`
+    */
   def Initializing : Receive = {
     case HelloFriend(sessionId, right) =>
       this.sessionId = sessionId
       leftRef = sender()
       rightRef = right.asInstanceOf[ActorRef]
-
       context.become(Started)
+
     case _ =>
       log.error("Unknown message")
       context.stop(self)
   }
 
+  /**
+    * After the initial greeting, this behavior is moved to the top of the stack.
+    * Subsequent activity is handled by the guidelines of this behavior.
+    * Primarily, it is a packet routing routine.
+    * @return a partial function
+    */
   def Started : Receive = {
     case ctrl @ ControlPacket(_, _) =>
       handlePktContainer(ctrl)
+
     case game @ GamePacket(_, _, _) =>
       handlePktContainer(game)
-      // temporary hack to keep the client from disconnecting
-    case PokeClient() =>
+
+    case PokeClient() => //temporary hack to keep the client from disconnecting
       sendResponse(PacketCoding.CreateGamePacket(0, KeepAliveMessage(0)))
-    case default => failWithError(s"Invalid packet class received: $default")
+
+    case default =>
+      failWithError(s"Invalid packet class received: $default")
   }
 
+  /**
+    * Deal with a normal PlanetSide packet.
+    * @param pkt the packet
+    */
   def handlePkt(pkt : PlanetSidePacket) : Unit = pkt match {
     case ctrl : PlanetSideControlPacket =>
       handleControlPkt(ctrl)
+
     case game : PlanetSideGamePacket =>
       handleGamePkt(game)
-    case default => failWithError(s"Invalid packet class received: $default")
+
+    case default =>
+      failWithError(s"Invalid packet class received: $default")
   }
 
+  /**
+    * Deal with a nested packet.
+    * In practice, we merely need to disentangle the actual packet from its wrapper and handle it as expected its type.
+    * @param pkt the packet
+    */
   def handlePktContainer(pkt : PlanetSidePacketContainer) : Unit = pkt match {
     case ctrl @ ControlPacket(opcode, ctrlPkt) =>
       handleControlPkt(ctrlPkt)
+
     case game @ GamePacket(opcode, seq, gamePkt) =>
       handleGamePkt(gamePkt)
-    case default => failWithError(s"Invalid packet container class received: $default")
+
+    case default =>
+      failWithError(s"Invalid packet container class received: $default")
   }
 
+  /**
+    * Deal with a control packet.
+    * Two types of control packets are merely containers for multiple packets and they must be unraveled.
+    * Each packet resulting from that unravelling can be handled as per that packet's type.
+    * The third type of control packet assists in maintaining the connection between the client and server.
+    * @param pkt the packet
+    */
   def handleControlPkt(pkt : PlanetSideControlPacket) = {
     pkt match {
       case SlottedMetaPacket(slot, subslot, innerPacket) =>
         sendResponse(PacketCoding.CreateControlPacket(SlottedMetaAck(slot, subslot)))
-
         PacketCoding.DecodePacket(innerPacket) match {
           case Failure(e) =>
             log.error(s"Failed to decode inner packet of SlottedMetaPacket: $e")
+
           case Successful(v) =>
             handlePkt(v)
         }
+
       case sync @ ControlSync(diff, unk, f1, f2, f3, f4, fa, fb) =>
         log.debug(s"SYNC: ${sync}")
         val serverTick = Math.abs(System.nanoTime().toInt) // limit the size to prevent encoding error
-        sendResponse(PacketCoding.CreateControlPacket(ControlSyncResp(diff, serverTick,
-          fa, fb, fb, fa)))
+        sendResponse(PacketCoding.CreateControlPacket(ControlSyncResp(diff, serverTick, fa, fb, fb, fa)))
+
       case MultiPacket(packets) =>
         packets.foreach { pkt =>
           PacketCoding.DecodePacket(pkt) match {
             case Failure(e) =>
               log.error(s"Failed to decode inner packet of MultiPacket: $e")
+
             case Successful(v) =>
               handlePkt(v)
           }
         }
+
       case MultiPacketEx(packets) =>
         packets.foreach { pkt =>
           PacketCoding.DecodePacket(pkt) match {
             case Failure(e) =>
               log.error(s"Failed to decode inner packet of MultiPacketEx: $e")
+
             case Successful(v) =>
               handlePkt(v)
           }
         }
+
       case default =>
         log.debug(s"Unhandled ControlPacket $default")
     }
@@ -155,27 +199,29 @@ class WorldSessionActor extends Actor with MDCContextAware {
   )
   val objectHex = ObjectCreateMessage(0, ObjectClass.AVATAR, PlanetSideGUID(75), obj)
 
+  /**
+    * Do everything.
+    * Yes, everything.
+    * All of it.
+    * @param pkt the packet
+    */
   def handleGamePkt(pkt : PlanetSideGamePacket) = pkt match {
     case ConnectToWorldRequestMessage(server, token, majorVersion, minorVersion, revision, buildDate, unk) =>
-
       val clientVersion = s"Client Version: ${majorVersion}.${minorVersion}.${revision}, ${buildDate}"
-
       log.info(s"New world login to ${server} with Token:${token}. ${clientVersion}")
-
       // ObjectCreateMessage
       sendResponse(PacketCoding.CreateGamePacket(0, objectHex))
       // XXX: hard coded message
       sendRawResponse(hex"14 0F 00 00 00 10 27 00  00 C1 D8 7A 02 4B 00 26 5C B0 80 00 ")
-
       // NOTE: PlanetSideZoneID just chooses the background
-      sendResponse(PacketCoding.CreateGamePacket(0,
-        CharacterInfoMessage(PlanetSideZoneID(1), 0, PlanetSideGUID(0), true, 0)))
+      sendResponse(PacketCoding.CreateGamePacket(0, CharacterInfoMessage(PlanetSideZoneID(1), 0, PlanetSideGUID(0), true, 0)))
+
     case msg @ CharacterRequestMessage(charId, action) =>
       log.info("Handling " + msg)
-
       action match {
         case CharacterRequestAction.Delete =>
           sendResponse(PacketCoding.CreateGamePacket(0, ActionResultMessage(false, Some(1))))
+
         case CharacterRequestAction.Select =>
           objectHex match {
             case obj @ ObjectCreateMessage(len, cls, guid, _, _) =>
@@ -224,12 +270,13 @@ class WorldSessionActor extends Actor with MDCContextAware {
               import scala.concurrent.duration._
               clientKeepAlive = context.system.scheduler.schedule(0 seconds, 500 milliseconds, self, PokeClient())
           }
+
         case default =>
           log.error("Unsupported " + default + " in " + msg)
       }
+
     case msg @ CharacterCreateRequestMessage(name, head, voice, gender, empire) =>
       log.info("Handling " + msg)
-
       sendResponse(PacketCoding.CreateGamePacket(0, ActionResultMessage(true, None)))
       sendResponse(PacketCoding.CreateGamePacket(0,
         CharacterInfoMessage(PlanetSideZoneID(0), 0, PlanetSideGUID(0), true, 0)))
@@ -245,13 +292,11 @@ class WorldSessionActor extends Actor with MDCContextAware {
       if (messagetype != ChatMessageType.CMT_TOGGLE_GM) {
         log.info("Chat: " + msg)
       }
-
       // TODO: handle this appropriately
       if(messagetype == ChatMessageType.CMT_QUIT) {
         sendResponse(DropCryptoSession())
         sendResponse(DropSession(sessionId, "user quit"))
       }
-
       // TODO: Depending on messagetype, may need to prepend sender's name to contents with proper spacing
       // TODO: Just replays the packet straight back to sender; actually needs to be routed to recipients!
       sendResponse(PacketCoding.CreateGamePacket(0, ChatMsg(messagetype, has_wide_contents, recipient, contents, note_contents)))
@@ -332,24 +377,53 @@ class WorldSessionActor extends Actor with MDCContextAware {
     case msg @ MountVehicleMsg(player_guid, vehicle_guid, unk) =>
       log.info("MounVehicleMsg: "+msg)
 
-    case default => log.debug(s"Unhandled GamePacket ${pkt}")
+    case default =>
+      log.debug(s"Unhandled GamePacket ${pkt}")
   }
 
+  /**
+    * What happens when this `Actor` stops.
+    * Stop poking the client to keep the connection alive.
+    */
+  override def postStop() = {
+    if(clientKeepAlive != null)
+      clientKeepAlive.cancel()
+  }
+
+  /**
+    * Log the problem that was encountered.
+    * @param error description of the error
+    */
   def failWithError(error : String) = {
     log.error(error)
     //sendResponse(PacketCoding.CreateControlPacket(ConnectionClose()))
   }
 
+  /**
+    * Send a message towards the outside network.
+    * Guaranteed data as a `PlanetSidePacketContainer`.
+    * It will passed as an `Any` type.
+    * @param cont packet
+    */
   def sendResponse(cont : PlanetSidePacketContainer) : Unit = {
     log.trace("WORLD SEND: " + cont)
     sendResponse(cont.asInstanceOf[Any])
   }
 
+  /**
+    * Send a message towards the outside network.
+    * @param msg the message or packet
+    */
   def sendResponse(msg : Any) : Unit = {
     MDC("sessionId") = sessionId.toString
     rightRef !> msg
   }
 
+  /**
+    * Send a message towards the outside network.
+    * Guaranteed data in byte form, it is repackaged into a `RawPacket` before continuing on its journey.
+    * @param pkt the message
+    */
   def sendRawResponse(pkt : ByteVector) = {
     log.trace("WORLD SEND RAW: " + pkt)
     sendResponse(RawPacket(pkt))

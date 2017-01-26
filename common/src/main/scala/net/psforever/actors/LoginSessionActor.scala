@@ -37,7 +37,7 @@ class LoginSessionActor extends Actor with MDCContextAware {
 
   /**
     * The initial behavior demonstrated by this `Actor`.
-    * Pass to the method `initialize`.
+    * Pass to the method `Initializing`.
     * @return a partial function
     */
   def receive = Initializing
