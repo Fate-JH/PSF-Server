@@ -343,7 +343,7 @@ object GamePacketOpcode extends Enumeration {
     case 0x12 => game.ChatMsg.decode
     case 0x13 => game.CharacterNoRecordMessage.decode
     case 0x14 => game.CharacterInfoMessage.decode
-    case 0x15 => noDecoder(UnknownMessage21)
+    case 0x15 => game.UnknownMessage21.decode
     case 0x16 => noDecoder(BindPlayerMessage)
     case 0x17 => noDecoder(ObjectCreateMessage_Duplicate)
     // 0x18
