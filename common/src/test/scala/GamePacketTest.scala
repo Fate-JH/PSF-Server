@@ -3,7 +3,7 @@ import java.net.{InetAddress, InetSocketAddress}
 
 import org.specs2.mutable._
 import net.psforever.packet._
-import net.psforever.packet.game._
+import net.psforever.packet.game.{SquadWaypointEvent, _}
 import net.psforever.packet.game.objectcreate.{InventoryItem, _}
 import net.psforever.types._
 import scodec.{Attempt, Err}
@@ -1321,6 +1321,82 @@ class GamePacketTest extends Specification {
         val pkt_forget = PacketCoding.EncodePacket(msg_forget).require.toByteVector
 
         pkt_forget mustEqual string_forget
+      }
+    }
+
+    "SquadWaypointEvent" should {
+      val string_noval = hex"84 82 00 0E 86 5E 40 80 00"
+      val string_long = hex"84 41 80 19 B8 5E 80 81 21 B6 44 C0 00"
+      val string_waypoint = hex"84 02 00 0E 86 5E 40 80 01 00 21 9D 56 13 1A 00 00 00"
+
+      "decode (noval)" in {
+        PacketCoding.DecodePacket(string_noval).require match {
+          case SquadWaypointEvent(unk1, unk2, unk3, unk4, unk5, unk6) =>
+            unk1 mustEqual 2
+            unk2 mustEqual 8
+            unk3 mustEqual 41490746L
+            unk4 mustEqual 0
+            unk5.isDefined mustEqual false
+            unk6.isDefined mustEqual false
+          case default =>
+            ko
+        }
+      }
+
+      "decode (long)" in {
+        PacketCoding.DecodePacket(string_long).require match {
+          case SquadWaypointEvent(unk1, unk2, unk3, unk4, unk5, unk6) =>
+            unk1 mustEqual 1
+            unk2 mustEqual 6
+            unk3 mustEqual 41607526L
+            unk4 mustEqual 4
+            unk5.isDefined mustEqual true
+            unk5.get mustEqual 1300870L
+            unk6.isDefined mustEqual false
+          case default =>
+            ko
+        }
+      }
+
+      "decode (waypoint)" in {
+        PacketCoding.DecodePacket(string_waypoint).require match {
+          case SquadWaypointEvent(unk1, unk2, unk3, unk4, unk5, unk6) =>
+            //Opcode 0 128 0x3A197902 0 128 0x86755 0x84C68 0x0000 0
+            unk1 mustEqual 0
+            unk2 mustEqual 8
+            unk3 mustEqual 41490746L
+            unk4 mustEqual 0
+            unk5.isDefined mustEqual false
+            unk6.isDefined mustEqual true
+            unk6.get.unk1 mustEqual 4
+            unk6.get.pos.x mustEqual 2795.0469f
+            unk6.get.pos.y mustEqual 4493.0312f
+            unk6.get.pos.z mustEqual 0f
+            unk6.get.unk2 mustEqual 0L
+          case default =>
+            ko
+        }
+      }
+
+      "encode (noval)" in {
+        val msg = SquadWaypointEvent(2, 8, 41490746L, 0, None, None)
+        val pkt = PacketCoding.EncodePacket(msg).require.toByteVector
+
+        pkt mustEqual string_noval
+      }
+
+      "encode (long)" in {
+        val msg = SquadWaypointEvent(/*1,*/ 6, 41607526L, 4, 1300870L) //'1' is guaranteed
+        val pkt = PacketCoding.EncodePacket(msg).require.toByteVector
+
+        pkt mustEqual string_long
+      }
+
+      "encode (waypoint)" in {
+        val msg = SquadWaypointEvent(/*0,*/ 8, 41490746L, 0, 4, 2795.0469f, 4493.0312f, 0) //'0' is guaranteed
+        val pkt = PacketCoding.EncodePacket(msg).require.toByteVector
+
+        pkt mustEqual string_waypoint
       }
     }
 
