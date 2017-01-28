@@ -65,14 +65,16 @@ class GamePacketTest extends Specification {
     "VNLWorldStatusMessage" should {
       // NOTE: the ServerType is encoded as 0x03 here, but the real planetside server will encode it as 0x04
       val string = hex"0597570065006c0063006f006d006500200074006f00200050006c0061006e00650074005300690064006500210020000186" ++
-              hex"67656d696e69" ++ hex"0100 03 00 01459e2540 3775" ++ bin"01".toByteVector
+        hex"67656d696e69" ++ hex"0100 03 00 01459e2540 3775" ++ bin"01".toByteVector
 
       "decode" in {
         PacketCoding.DecodePacket(string).require match {
           case VNLWorldStatusMessage(message, worlds) =>
             worlds.length mustEqual 1
             message mustEqual "Welcome to PlanetSide! "
-            val world = worlds{0}
+            val world = worlds {
+              0
+            }
 
             world.name mustEqual "gemini"
             world.empireNeed mustEqual PlanetSideEmpire.NC
@@ -80,8 +82,12 @@ class GamePacketTest extends Specification {
             world.serverType mustEqual ServerType.Released
 
             world.connections.length mustEqual 1
-            world.connections{0}.address.getPort mustEqual 30007
-            world.connections{0}.address.getAddress.toString mustEqual "/64.37.158.69"
+            world.connections {
+              0
+            }.address.getPort mustEqual 30007
+            world.connections {
+              0
+            }.address.getAddress.toString mustEqual "/64.37.158.69"
           case default =>
             ko
         }
@@ -268,7 +274,7 @@ class GamePacketTest extends Specification {
       "decode (2)" in {
         //an invalid bit representation will fail to turn into an object
         PacketCoding.DecodePacket(packet2).require match {
-          case obj @ ObjectCreateMessage(len, cls, guid, parent, data) =>
+          case obj@ObjectCreateMessage(len, cls, guid, parent, data) =>
             len mustEqual 248
             cls mustEqual 121
             guid mustEqual PlanetSideGUID(2497)
@@ -281,7 +287,7 @@ class GamePacketTest extends Specification {
 
       "decode (9mm)" in {
         PacketCoding.DecodePacket(string_9mm).require match {
-          case obj @ ObjectCreateMessage(len, cls, guid, parent, data) =>
+          case obj@ObjectCreateMessage(len, cls, guid, parent, data) =>
             len mustEqual 124
             cls mustEqual 28
             guid mustEqual PlanetSideGUID(1280)
@@ -297,7 +303,7 @@ class GamePacketTest extends Specification {
 
       "decode (gauss)" in {
         PacketCoding.DecodePacket(string_gauss).require match {
-          case obj @ ObjectCreateMessage(len, cls, guid, parent, data) =>
+          case obj@ObjectCreateMessage(len, cls, guid, parent, data) =>
             len mustEqual 220
             cls mustEqual 345
             guid mustEqual PlanetSideGUID(1465)
@@ -319,7 +325,7 @@ class GamePacketTest extends Specification {
 
       "decode (punisher)" in {
         PacketCoding.DecodePacket(string_punisher).require match {
-          case obj @ ObjectCreateMessage(len, cls, guid, parent, data) =>
+          case obj@ObjectCreateMessage(len, cls, guid, parent, data) =>
             len mustEqual 295
             cls mustEqual 706
             guid mustEqual PlanetSideGUID(1703)
@@ -341,12 +347,12 @@ class GamePacketTest extends Specification {
             obj_ammo(1).obj.asInstanceOf[AmmoBoxData].magazine mustEqual 1
           case _ =>
             ko
-          }
         }
+      }
 
       "decode (rek)" in {
         PacketCoding.DecodePacket(string_rek).require match {
-          case obj @ ObjectCreateMessage(len, cls, guid, parent, data) =>
+          case obj@ObjectCreateMessage(len, cls, guid, parent, data) =>
             len mustEqual 151
             cls mustEqual 0x2D8
             guid mustEqual PlanetSideGUID(1439)
@@ -362,7 +368,7 @@ class GamePacketTest extends Specification {
 
       "decode (character)" in {
         PacketCoding.DecodePacket(string_testchar).require match {
-          case obj @ ObjectCreateMessage(len, cls, guid, parent, data) =>
+          case obj@ObjectCreateMessage(len, cls, guid, parent, data) =>
             len mustEqual 3159
             cls mustEqual 0x79
             guid mustEqual PlanetSideGUID(75)
@@ -535,9 +541,9 @@ class GamePacketTest extends Specification {
           "IlllIIIlllIlIllIlllIllI",
           4,
           2,
-          2,9,
+          2, 9,
           1,
-          3, 118,30, 0x8080, 0xFFFF, 2,
+          3, 118, 30, 0x8080, 0xFFFF, 2,
           255, 106, 7,
           RibbonBars()
         )
@@ -574,7 +580,7 @@ class GamePacketTest extends Specification {
 
     "ChatMsg" should {
       val string_local = hex"12 1A C000 83610062006300"
-      val string_tell  = hex"12 20 C180640065006600 83610062006300"
+      val string_tell = hex"12 20 C180640065006600 83610062006300"
 
       "decode" in {
         PacketCoding.DecodePacket(string_local).require match {
@@ -1321,6 +1327,32 @@ class GamePacketTest extends Specification {
         val pkt_forget = PacketCoding.EncodePacket(msg_forget).require.toByteVector
 
         pkt_forget mustEqual string_forget
+      }
+    }
+
+    "SquadWaypointRequest" should {
+      "decode (noval)" in {
+        ko
+      }
+
+      "decode (long)" in {
+        ko
+      }
+
+      "decode (waypoint)" in {
+        ko
+      }
+
+      "encode (noval)" in {
+        ko
+      }
+
+      "encode (long)" in {
+        ko
+      }
+
+      "encode (waypoint)" in {
+        ko
       }
     }
 
