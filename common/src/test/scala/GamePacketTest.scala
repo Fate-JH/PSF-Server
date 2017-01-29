@@ -1937,6 +1937,10 @@ class GamePacketTest extends Specification {
 
         pkt mustEqual string
       }
+
+      "encode (failure)" in {
+        PacketCoding.EncodePacket(SetChatFilterMessage(2, true, true :: true :: true :: true :: Nil)).isFailure mustEqual true
+      }
     }
 
     "WeaponJammedMessage" should {
