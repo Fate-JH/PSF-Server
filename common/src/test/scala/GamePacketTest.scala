@@ -6,6 +6,7 @@ import net.psforever.packet._
 import net.psforever.packet.game._
 import net.psforever.packet.game.objectcreate.{InventoryItem, _}
 import net.psforever.types._
+import org.specs2.specification.core.Fragment
 import scodec.{Attempt, Err}
 import scodec.Attempt.Successful
 import scodec.bits._
@@ -1904,6 +1905,37 @@ class GamePacketTest extends Specification {
         val pkt = PacketCoding.EncodePacket(msg).require.toByteVector
 
         pkt mustEqual stringVehicles
+      }
+    }
+
+    "SetChatFilterMessage" should {
+      val string = hex"63 05 FF 80"
+
+      "decode" in {
+        PacketCoding.DecodePacket(string).require match {
+          case SetChatFilterMessage(unk1, unk2, unk3) =>
+            unk1 mustEqual 2
+            unk2 mustEqual true
+            unk3.size mustEqual 9
+            unk3.head mustEqual true
+            unk3(1) mustEqual true
+            unk3(2) mustEqual true
+            unk3(3) mustEqual true
+            unk3(4) mustEqual true
+            unk3(5) mustEqual true
+            unk3(6) mustEqual true
+            unk3(7) mustEqual true
+            unk3(8) mustEqual true
+          case default =>
+            ko
+        }
+      }
+
+      "encode" in {
+        val msg = SetChatFilterMessage(2, true, true :: true :: true :: true :: true :: true :: true :: true :: true :: Nil)
+        val pkt = PacketCoding.EncodePacket(msg).require.toByteVector
+
+        pkt mustEqual string
       }
     }
 
