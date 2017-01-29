@@ -438,7 +438,7 @@ object GamePacketOpcode extends Enumeration {
     case 0x62 => noDecoder(SplashHitMessage)
     case 0x63 => noDecoder(SetChatFilterMessage)
     case 0x64 => noDecoder(AvatarSearchCriteriaMessage)
-    case 0x65 => noDecoder(AvatarSearchResponse)
+    case 0x65 => game.AvatarSearchResponse.decode
     case 0x66 => game.WeaponJammedMessage.decode
     case 0x67 => noDecoder(LinkDeadAwarenessMsg)
     // 0x68
