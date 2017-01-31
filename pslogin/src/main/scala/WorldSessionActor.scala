@@ -324,7 +324,51 @@ class WorldSessionActor extends Actor with MDCContextAware {
 //              sendResponse(PacketCoding.CreateGamePacket(0, BuildingInfoUpdateMessage(PlanetSideGUID(1), PlanetSideGUID(3),
 //                1,false,PlanetSideEmpire.TR,0,PlanetSideEmpire.TR,0,PlanetSideGeneratorState.Normal,true,true,0,0,0,0,false,8,true,true)))
 
+//                log.info(
+//                  PacketCoding.DecodeGamePacket(
+//                    hex"9501000000006a3501c0d92991bfa7256b3ffddc18be090000008001083f069d0a3fd996e4ee303fb4b62a3f81b51ae2203f65d9813db51404030a3f663a4f3f5e280efb7f3f76c0f93ca7811c81673f98c33a3f111ea76e103fed2e873e161282dc593fabe3623f8cc2c61aae3e25fdc83e2a4b"
+//                  ).require.toString
+//                )
+              //uint32L
+//              sendResponse(PacketCoding.CreateGamePacket(0,
+//                WeatherMessage(
+//                  Weather1(0, 3221686346L, 3213843414L, 1063659300L, 3188229655L) ::
+//                    Nil,
+//                  Weather2(1054960640L, 1057896716L, 100,  68) ::
+//                    Weather2(1052751708L, 1039281932L, 0xA4, 0x62) ::
+//                    Weather2(1058644836L, 1060000442L, 0x59, 0x7D) ::
+//                    Weather2(1057592986L, 1033812373L, 0x08, 0x00) ::
+//                    Weather2(1055223561L, 1062393452L, 0x39, 0x19) ::
+//                    Weather2(1063825294L, 1026990235L, 0x01, 0x00) ::
+//                    Weather2(1062221212L, 1061052318L, 0x3C, 0x30) ::
+//                    Weather2(1056065102L, 1049519865L, 0x6B, 0x56) ::
+//                    Weather2(1065297864L, 1056146608L, 0xB6, 0xC1) ::
+//                    Weather2(1061327106L, 1063681969L, 0x00, 0x00) ::
+//                    Weather2(1048512396L, 1053832497L, 50, 10) ::
+//                    Nil
+//                )
+//              ))
+              //floatL
+//              sendResponse(PacketCoding.CreateGamePacket(0,
+//                WeatherMessage(
+//                  Weather1(0, -2.0188851, -1.1340896, 0.9185433, -0.1492805) ::
+//                    Nil,
+//                  Weather2(0.5312729, 0.5414585, 100,  68) ::
+//                    Weather2(0.6911452, 0.6668503, 0xA4, 0x62) ::
+//                    Weather2(0.62845004, 0.06340293, 0x59, 0x7D) ::
+//                    Weather2(0.5391085, 0.80948484, 0x08, 0x00) ::
+//                    Weather2(0.99992454, 0.03048728, 0x39, 0x19) ::
+//                    Weather2(0.9043138, 0.729547, 0x01, 0x00) ::
+//                    Weather2(0.5641884, 0.2640299, 0x3C, 0x30) ::
+//                    Weather2(0.85102093, 0.88628644, 0x6B, 0x56) ::
+//                    Weather2(0.34004802, 0.39255634, 0xB6, 0xC1) ::
+//                    Nil
+//                )
+//              ))
+
+              //TODO: convert following to player shift
               sendRawResponse(hex"BE 88 4D B5 6C 46 AE D0 A0 04 00")
+              //TODO: convert following to player state
               sendRawResponse(hex"08 4B 00 84 DB 56 C4 6A ED 0A 00 00 00 00 10 1B 83 04 1F F6 8A BE 5D 57 A2 00 00 00 00 AF 00 0F 00 1B 82 04 1F FB CA BF 96 AF 02 00 00 00 00 AF 00 0F 00 1B 81 04 1F E6 F4 BF 32 F7 22 00 00 00 00 AF 00 0F 00")
               sendResponse(PacketCoding.CreateGamePacket(0, SetCurrentAvatarMessage(guid,0,0)))
               sendResponse(PacketCoding.CreateGamePacket(0, FavoritesMessage(0, guid, 0, "Sample Loadout Entry", Some(1))))

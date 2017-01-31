@@ -14,10 +14,10 @@ import scodec.codecs._
   * @param unk5 na
   */
 final case class Weather1(unk1 : Int,
-                          unk2 : Long,
-                          unk3 : Long,
-                          unk4 : Long,
-                          unk5 : Long)
+                          unk2 : Float,
+                          unk3 : Float,
+                          unk4 : Float,
+                          unk5 : Float)
 
 /**
   * na
@@ -26,8 +26,8 @@ final case class Weather1(unk1 : Int,
   * @param unk3 na
   * @param unk4 na
   */
-final case class Weather2(unk1 : Long,
-                          unk2 : Long,
+final case class Weather2(unk1 : Float,
+                          unk2 : Float,
                           unk3 : Int,
                           unk4 : Int)
 
@@ -50,18 +50,18 @@ object WeatherMessage extends Marshallable[WeatherMessage] {
     */
   private val weather1Codec : Codec[Weather1] = (
     ("unk1" | uint8L) ::
-      ("unk2" | uint32L) ::
-      ("unk3" | uint32L) ::
-      ("unk4" | uint32L) ::
-      ("unk5" | uint32L)
+      ("unk2" | floatL) ::
+      ("unk3" | floatL) ::
+      ("unk4" | floatL) ::
+      ("unk5" | floatL)
     ).as[Weather1]
 
   /**
     * na
     */
   private val weather2Codec : Codec[Weather2] = (
-    ("unk1" | uint32L) ::
-      ("unk2" | uint32L) ::
+    ("unk1" | floatL) ::
+      ("unk2" | floatL) ::
       ("unk3" | uint8L) ::
       ("unk4" | uint8L)
     ).as[Weather2]
