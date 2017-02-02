@@ -37,12 +37,20 @@ lazy val psloginPackSettings = packAutoSettings ++ Seq(
 lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(psloginPackSettings: _*).
-  aggregate(pslogin, common)
+  aggregate(pslogin, login_server, common)
 
 lazy val pslogin = (project in file("pslogin")).
   settings(commonSettings: _*).
   settings(
     name := "pslogin"
+  ).
+  settings(pscryptoSettings: _*).
+  dependsOn(common)
+
+lazy val login_server = (project in file("login_server")).
+  settings(commonSettings: _*).
+  settings(
+    name := "login_server"
   ).
   settings(pscryptoSettings: _*).
   dependsOn(common)

@@ -1,36 +1,34 @@
 // Copyright (c) 2016 PSForever.net to present
-import java.net.InetAddress
 import java.io.File
+import java.net.InetAddress
 
 import akka.actor.{ActorSystem, Props}
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.core.joran.spi.JoranException
-import ch.qos.logback.core.status._
+import ch.qos.logback.core.status.{Status, StatusUtil}
 import ch.qos.logback.core.util.StatusPrinter
 import com.typesafe.config.ConfigFactory
-import net.psforever.actors.{CryptoSessionActor, LoginConfig, LoginSessionActor, WorldSessionActor}
 import net.psforever.actors.session.{SessionPipeline, SessionRouter}
 import net.psforever.actors.udp.UdpListener
+import net.psforever.actors.{CryptoSessionActor, LoginConfig, LoginSessionActor}
 import net.psforever.crypto.CryptoInterface
-import org.slf4j
-import org.fusesource.jansi.Ansi._
 import org.fusesource.jansi.Ansi.Color._
+import org.fusesource.jansi.Ansi._
+import org.slf4j
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.Duration
 
-object PsLogin {
+object LoginServer {
   private val logger = org.log4s.getLogger
 
   var args : Array[String] = Array()
   var config : java.util.Map[String,Object] = null
   var system : akka.actor.ActorSystem = null
   var loginRouter : akka.actor.Props = null
-  var worldRouter : akka.actor.Props = null
   var loginListener : akka.actor.ActorRef = null
-  var worldListener : akka.actor.ActorRef = null
 
   def banner() : Unit = {
     println(ansi().fgBright(BLUE).a("""   ___  ________"""))
@@ -45,8 +43,8 @@ object PsLogin {
   /** Grabs the most essential system information and returns it as a preformatted string */
   def systemInformation : String = {
     s"""|~~~ System Information ~~~
-       |${System.getProperty("os.name")} (v. ${System.getProperty("os.version")}, ${System.getProperty("os.arch")})
-       |${System.getProperty("java.vm.name")} (build ${System.getProperty("java.version")}), ${System.getProperty("java.vendor")} - ${System.getProperty("java.vendor.url")}
+        |${System.getProperty("os.name")} (v. ${System.getProperty("os.version")}, ${System.getProperty("os.arch")})
+        |${System.getProperty("java.vm.name")} (build ${System.getProperty("java.version")}), ${System.getProperty("java.vendor")} - ${System.getProperty("java.vendor.url")}
     """.stripMargin
   }
 
@@ -136,12 +134,12 @@ object PsLogin {
       case e : UnsatisfiedLinkError =>
         logger.error("Unable to initialize " + CryptoInterface.libName)
         logger.error(e)("This means that your PSCrypto version is out of date. Get the latest version from the README" +
-          " https://github.com/psforever/PSF-LoginServer.scala#downloading-pscrypto")
+          " https://github.com/psforever/PSF-LoginServer#downloading-pscrypto")
         sys.exit(1)
       case e : IllegalArgumentException =>
         logger.error("Unable to initialize " + CryptoInterface.libName)
         logger.error(e)("This means that your PSCrypto version is out of date. Get the latest version from the README" +
-          " https://github.com/psforever/PSF-LoginServer.scala#downloading-pscrypto")
+          " https://github.com/psforever/PSF-LoginServer#downloading-pscrypto")
         sys.exit(1)
     }
 
@@ -161,39 +159,14 @@ object PsLogin {
     ).asJava
 
     /** Start up the main actor system. This "system" is the home for all actors running on this server */
-    system = ActorSystem("PsLogin", ConfigFactory.parseMap(config))
+    system = ActorSystem("PS_Login_Server", ConfigFactory.parseMap(config))
 
-    /** Create pipelines for the login and world servers
-      *
-      * The first node in the pipe is an Actor that handles the crypto for protecting packets.
-      * After any crypto operations have been applied or unapplied, the packets are passed on to the next
-      * actor in the chain. For an incoming packet, this is a player session handler. For an outgoing packet
-      * this is the session router, which returns the packet to the sending host.
-      *
-      * Login sessions are divided between two actors. The crypto session actor transparently handles all of the cryptographic
-      * setup of the connection. Once a correct crypto session has been established, all packets, after being decrypted
-      * will be passed on to the login session actor. This actor has important state that is used to maintain the login
-      * session.
-      *
-      *                      > PlanetSide net.psforever.actors.Session Pipeline <
-      *
-      *            read()                  route                decrypt
-      * UDP Socket -----> [Session Router] -----> [Crypto Actor] -----> [Session Actor]
-      *     /|\             |         /|\          |       /|\                |
-      *      |     write()  |          |  encrypt  |        |   response      |
-      *      +--------------+          +-----------+        +-----------------+
-      **/
     val loginTemplate = List(
       SessionPipeline("crypto-session-", Props[CryptoSessionActor]),
       SessionPipeline("login-session-", Props[LoginSessionActor])
     )
-    val worldTemplate = List(
-      SessionPipeline("crypto-session-", Props[CryptoSessionActor]),
-      SessionPipeline("world-session-", Props[WorldSessionActor])
-    )
 
     val loginServerPort = 51000
-    val worldServerPort = 51001
 
 
     // Uncomment for network simulation
@@ -208,9 +181,7 @@ object PsLogin {
     */
 
     loginRouter = Props(new SessionRouter("Login", loginTemplate))
-    worldRouter = Props(new SessionRouter("World", worldTemplate))
     loginListener = system.actorOf(Props(new UdpListener(loginRouter, "login-session-router", LoginConfig.serverIpAddress, loginServerPort)), "login-udp-endpoint")
-    worldListener = system.actorOf(Props(new UdpListener(worldRouter, "world-session-router", LoginConfig.serverIpAddress, worldServerPort)), "world-udp-endpoint")
 
     logger.info(s"NOTE: Set client.ini to point to ${LoginConfig.serverIpAddress.getHostAddress}:$loginServerPort")
 
