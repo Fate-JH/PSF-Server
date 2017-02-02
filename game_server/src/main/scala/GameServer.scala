@@ -1,41 +1,41 @@
 // Copyright (c) 2016 PSForever.net to present
-import java.io.File
 import java.net.InetAddress
+import java.io.File
 
 import akka.actor.{ActorSystem, Props}
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.core.joran.spi.JoranException
-import ch.qos.logback.core.status.{Status, StatusUtil}
+import ch.qos.logback.core.status._
 import ch.qos.logback.core.util.StatusPrinter
 import com.typesafe.config.ConfigFactory
+import net.psforever.actors.{CryptoSessionActor, LoginConfig, WorldSessionActor}
 import net.psforever.actors.session.{SessionPipeline, SessionRouter}
 import net.psforever.actors.udp.UdpListener
-import net.psforever.actors.{CryptoSessionActor, LoginConfig, LoginSessionActor}
 import net.psforever.crypto.CryptoInterface
-import org.fusesource.jansi.Ansi.Color._
-import org.fusesource.jansi.Ansi._
 import org.slf4j
+import org.fusesource.jansi.Ansi._
+import org.fusesource.jansi.Ansi.Color._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
-object LoginServer {
+object GameServer {
   private val logger = org.log4s.getLogger
 
   var args : Array[String] = Array()
   var config : java.util.Map[String,Object] = null
   var system : akka.actor.ActorSystem = null
-  var loginRouter : akka.actor.Props = null
-  var loginListener : akka.actor.ActorRef = null
+  var worldRouter : akka.actor.Props = null
+  var worldListener : akka.actor.ActorRef = null
 
   def banner() : Unit = {
     println(ansi().fgBright(BLUE).a(   """   ___  ________"""))
     println(ansi().fgBright(BLUE).a(   """  / _ \/ __/ __/__  _______ _  _____ ____"""))
     println(ansi().fgBright(MAGENTA).a(""" / ___/\ \/ _// _ \/ __/ -_) |/ / -_) __/"""))
     println(ansi().fgBright(RED).a(    """/_/  /___/_/  \___/_/  \__/|___/\__/_/""").reset())
-    println("""   Login Server - PSForever Project""")
+    println("""    Game Server - PSForever Project""")
     println("""        http://psforever.net""")
     println
   }
@@ -134,12 +134,12 @@ object LoginServer {
       case e : UnsatisfiedLinkError =>
         logger.error("Unable to initialize " + CryptoInterface.libName)
         logger.error(e)("This means that your PSCrypto version is out of date. Get the latest version from the README" +
-          " https://github.com/psforever/PSF-LoginServer#downloading-pscrypto")
+          " https://github.com/psforever/PSF-LoginServer.scala#downloading-pscrypto")
         sys.exit(1)
       case e : IllegalArgumentException =>
         logger.error("Unable to initialize " + CryptoInterface.libName)
         logger.error(e)("This means that your PSCrypto version is out of date. Get the latest version from the README" +
-          " https://github.com/psforever/PSF-LoginServer#downloading-pscrypto")
+          " https://github.com/psforever/PSF-LoginServer.scala#downloading-pscrypto")
         sys.exit(1)
     }
 
@@ -159,15 +159,15 @@ object LoginServer {
     ).asJava
 
     /** Start up the main actor system. This "system" is the home for all actors running on this server */
-    system = ActorSystem("PS_Login_Server", ConfigFactory.parseMap(config))
+    system = ActorSystem("PsGame", ConfigFactory.parseMap(config))
 
-    /** Create pipelines for the login servers */
-    val loginTemplate = List(
+    /** Create pipelines for the world servers */
+    val worldTemplate = List(
       SessionPipeline("crypto-session-", Props[CryptoSessionActor]),
-      SessionPipeline("login-session-", Props[LoginSessionActor])
+      SessionPipeline("world-session-", Props[WorldSessionActor])
     )
 
-    val loginServerPort = 51000
+    val worldServerPort = 51001
 
 
     // Uncomment for network simulation
@@ -180,16 +180,13 @@ object LoginServer {
       packetReorderingTime = 400
     )
     */
-
-    loginRouter = Props(new SessionRouter("Login", loginTemplate))
-    loginListener = system.actorOf(Props(new UdpListener(loginRouter, "login-session-router", LoginConfig.serverIpAddress, loginServerPort)), "login-udp-endpoint")
-
-    logger.info(s"NOTE: Set client.ini to point to ${LoginConfig.serverIpAddress.getHostAddress}:$loginServerPort")
+    worldRouter = Props(new SessionRouter("World", worldTemplate))
+    worldListener = system.actorOf(Props(new UdpListener(worldRouter, "world-session-router", LoginConfig.serverIpAddress, worldServerPort)), "world-udp-endpoint")
 
     // Add our shutdown hook (this works for Control+C as well, but not in Cygwin)
     sys addShutdownHook {
       // TODO: clean up active sessions and close resources safely
-      logger.info("Login server now shutting down...")
+      logger.info("Game server now shutting down...")
     }
   }
 
