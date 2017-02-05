@@ -29,15 +29,15 @@ class UdpNetworkSimulator(server : ActorRef, params : NetworkSimulatorParameters
   private val log = org.log4s.getLogger
 
   import scala.concurrent.ExecutionContext.Implicits.global
-  val packetDelayDuration = (params.packetDelay/2).milliseconds
+  val packetDelayDuration : FiniteDuration = (params.packetDelay/2).milliseconds
 
   type QueueItem = (Udp.Message, Long)
-  implicit val QueueItem = Ordering.by[QueueItem, Long](_._2).reverse //sort in ascending order (older things get dequeued first)
-  val inPacketQueue = mutable.PriorityQueue[QueueItem]()
-  val outPacketQueue = mutable.PriorityQueue[QueueItem]()
+  implicit val QueueItem : Ordering[QueueItem] = Ordering.by[QueueItem, Long](_._2).reverse //sort in ascending order (older things get dequeued first)
+  val inPacketQueue : mutable.PriorityQueue[QueueItem] = mutable.PriorityQueue[QueueItem]()
+  val outPacketQueue : mutable.PriorityQueue[QueueItem] = mutable.PriorityQueue[QueueItem]()
 
   val chaos = new Random()
-  var interface = ActorRef.noSender
+  var interface : ActorRef = ActorRef.noSender
 
   /**
     * The initial behavior demonstrated by this `Actor`.
@@ -46,7 +46,7 @@ class UdpNetworkSimulator(server : ActorRef, params : NetworkSimulatorParameters
     * the actual behavior is generally the same in certain ways.
     * @return a partial function
     */
-  def receive = {
+  def receive : Receive = {
     case ProcessInputQueue() =>
       val time = System.nanoTime()
       var exit = false
@@ -105,7 +105,7 @@ class UdpNetworkSimulator(server : ActorRef, params : NetworkSimulatorParameters
     * @param queue it doesn't do anything in this function
     * @param outbound which direction the message is going to be sent, indicating where the message originates
     */
-  def handlePacket(message : Udp.Message, queue : mutable.PriorityQueue[QueueItem], outbound : Boolean) = {
+  def handlePacket(message : Udp.Message, queue : mutable.PriorityQueue[QueueItem], outbound : Boolean) : Unit = {
     val name : String = if(outbound) "OUT" else "IN"
     val queue : mutable.PriorityQueue[QueueItem] = if(outbound) outPacketQueue else inPacketQueue
 
@@ -134,7 +134,7 @@ class UdpNetworkSimulator(server : ActorRef, params : NetworkSimulatorParameters
     * @param duration how long until the message will be sent
     * @param outbound which direction the message is going to be sent, indicating where the message originates
     */
-  def schedule(duration : FiniteDuration, outbound : Boolean) =
+  def schedule(duration : FiniteDuration, outbound : Boolean) : Unit =
     context.system.scheduler.scheduleOnce(
       packetDelayDuration,
       self,

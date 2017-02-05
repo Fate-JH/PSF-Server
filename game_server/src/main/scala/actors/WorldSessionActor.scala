@@ -1,5 +1,5 @@
 // Copyright (c) 2016 PSForever.net to present
-package net.psforever.actors
+package actors
 
 import akka.actor.MDCContextAware.Implicits._
 import akka.actor.{Actor, ActorRef, Cancellable, MDCContextAware}
@@ -42,8 +42,8 @@ class WorldSessionActor extends Actor with MDCContextAware {
     * @see `Started`
     */
   def Initializing : Receive = {
-    case HelloFriend(sessionId, right) =>
-      this.sessionId = sessionId
+    case HelloFriend(sessionid, right) =>
+      this.sessionId = sessionid
       leftRef = sender()
       rightRef = right.asInstanceOf[ActorRef]
       context.become(Started)
@@ -111,7 +111,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
     * The third type of control packet assists in maintaining the connection between the client and server.
     * @param pkt the packet
     */
-  def handleControlPkt(pkt : PlanetSideControlPacket) = {
+  def handleControlPkt(pkt : PlanetSideControlPacket) : Unit = {
     pkt match {
       case SlottedMetaPacket(slot, subslot, innerPacket) =>
         sendResponse(PacketCoding.CreateControlPacket(SlottedMetaAck(slot, subslot)))
@@ -124,7 +124,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
         }
 
       case sync @ ControlSync(diff, unk, f1, f2, f3, f4, fa, fb) =>
-        log.debug(s"SYNC: ${sync}")
+        log.debug(s"SYNC: $sync")
         val serverTick = Math.abs(System.nanoTime().toInt) // limit the size to prevent encoding error
         sendResponse(PacketCoding.CreateControlPacket(ControlSyncResp(diff, serverTick, fa, fb, fb, fa)))
 
@@ -172,7 +172,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
     255, 106, 7,
     RibbonBars()
   )
-  val inv =
+  val inv : List[InventoryItem] =
     InventoryItem(ObjectClass.BEAMER, PlanetSideGUID(76), 0, WeaponData(8, ObjectClass.ENERGY_CELL, PlanetSideGUID(77), 0, AmmoBoxData(16))) ::
     InventoryItem(ObjectClass.SUPPRESSOR, PlanetSideGUID(78), 2, WeaponData(8, ObjectClass.BULLETS_9MM, PlanetSideGUID(79), 0, AmmoBoxData(25))) ::
     InventoryItem(ObjectClass.FORCE_BLADE, PlanetSideGUID(80), 4, WeaponData(8, ObjectClass.FORCE_BLADE_AMMO, PlanetSideGUID(81), 0, AmmoBoxData(1))) ::
@@ -205,10 +205,10 @@ class WorldSessionActor extends Actor with MDCContextAware {
     * All of it.
     * @param pkt the packet
     */
-  def handleGamePkt(pkt : PlanetSideGamePacket) = pkt match {
+  def handleGamePkt(pkt : PlanetSideGamePacket) : Unit = pkt match {
     case ConnectToWorldRequestMessage(server, token, majorVersion, minorVersion, revision, buildDate, unk) =>
-      val clientVersion = s"Client Version: ${majorVersion}.${minorVersion}.${revision}, ${buildDate}"
-      log.info(s"New world login to ${server} with Token:${token}. ${clientVersion}")
+      val clientVersion = s"Client Version: $majorVersion.$minorVersion.$revision, $buildDate"
+      log.info(s"New world login to $server with Token:$token. $clientVersion")
       // ObjectCreateMessage
       sendResponse(PacketCoding.CreateGamePacket(0, objectHex))
       // XXX: hard coded message
@@ -378,14 +378,14 @@ class WorldSessionActor extends Actor with MDCContextAware {
       log.info("MounVehicleMsg: "+msg)
 
     case default =>
-      log.debug(s"Unhandled GamePacket ${pkt}")
+      log.debug(s"Unhandled GamePacket $pkt")
   }
 
   /**
     * What happens when this `Actor` stops.
     * Stop poking the client to keep the connection alive.
     */
-  override def postStop() = {
+  override def postStop() : Unit = {
     if(clientKeepAlive != null)
       clientKeepAlive.cancel()
   }
@@ -394,7 +394,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
     * Log the problem that was encountered.
     * @param error description of the error
     */
-  def failWithError(error : String) = {
+  def failWithError(error : String) : Unit = {
     log.error(error)
     //sendResponse(PacketCoding.CreateControlPacket(ConnectionClose()))
   }
@@ -424,7 +424,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
     * Guaranteed data in byte form, it is repackaged into a `RawPacket` before continuing on its journey.
     * @param pkt the message
     */
-  def sendRawResponse(pkt : ByteVector) = {
+  def sendRawResponse(pkt : ByteVector) : Unit = {
     log.trace("WORLD SEND RAW: " + pkt)
     sendResponse(RawPacket(pkt))
   }

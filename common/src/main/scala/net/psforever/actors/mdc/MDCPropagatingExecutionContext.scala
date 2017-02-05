@@ -19,7 +19,7 @@ trait MDCPropagatingExecutionContext extends ExecutionContext {
     * @see `java.lang.Thread`
     */
   override def prepare() : ExecutionContext = new ExecutionContext {
-    val context = MDC.getCopyOfContextMap //Save the call-site MDC state
+    val context : java.util.Map[String, String] = MDC.getCopyOfContextMap //Save the call-site MDC state
 
     /**
       * What happens when this context is executed.
@@ -61,5 +61,5 @@ object MDCPropagatingExecutionContext {
     implicit lazy val global = MDCPropagatingExecutionContextWrapper(ExecutionContext.Implicits.global)
   }
 
-  def setMDCContext(context : java.util.Map[String, String]) = akka.actor.MDCContextAware.setMDCContext(context)
+  def setMDCContext(context : java.util.Map[String, String]) : Unit = akka.actor.MDCContextAware.setMDCContext(context)
 }

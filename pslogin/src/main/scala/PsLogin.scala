@@ -2,6 +2,7 @@
 import java.net.InetAddress
 import java.io.File
 
+import actors.{LoginSessionActor, WorldSessionActor}
 import akka.actor.{ActorSystem, Props}
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
@@ -9,7 +10,7 @@ import ch.qos.logback.core.joran.spi.JoranException
 import ch.qos.logback.core.status._
 import ch.qos.logback.core.util.StatusPrinter
 import com.typesafe.config.ConfigFactory
-import net.psforever.actors.{CryptoSessionActor, LoginConfig, LoginSessionActor, WorldSessionActor}
+import net.psforever.actors.{CryptoSessionActor, LoopbackConfig}
 import net.psforever.actors.session.{SessionPipeline, SessionRouter}
 import net.psforever.actors.udp.UdpListener
 import net.psforever.crypto.CryptoInterface
@@ -98,10 +99,10 @@ object PsLogin {
 
   def parseArgs(args : Array[String]) : Unit = {
     if(args.length == 1) {
-      LoginConfig.serverIpAddress = InetAddress.getByName(args{0})
+      LoopbackConfig.serverIpAddress = InetAddress.getByName(args{0})
     }
     else {
-      LoginConfig.serverIpAddress = InetAddress.getLocalHost
+      LoopbackConfig.serverIpAddress = InetAddress.getLocalHost
     }
   }
 
@@ -209,10 +210,10 @@ object PsLogin {
 
     loginRouter = Props(new SessionRouter("Login", loginTemplate))
     worldRouter = Props(new SessionRouter("World", worldTemplate))
-    loginListener = system.actorOf(Props(new UdpListener(loginRouter, "login-session-router", LoginConfig.serverIpAddress, loginServerPort)), "login-udp-endpoint")
-    worldListener = system.actorOf(Props(new UdpListener(worldRouter, "world-session-router", LoginConfig.serverIpAddress, worldServerPort)), "world-udp-endpoint")
+    loginListener = system.actorOf(Props(new UdpListener(loginRouter, "login-session-router", LoopbackConfig.serverIpAddress, loginServerPort)), "login-udp-endpoint")
+    worldListener = system.actorOf(Props(new UdpListener(worldRouter, "world-session-router", LoopbackConfig.serverIpAddress, worldServerPort)), "world-udp-endpoint")
 
-    logger.info(s"NOTE: Set client.ini to point to ${LoginConfig.serverIpAddress.getHostAddress}:$loginServerPort")
+    logger.info(s"NOTE: Set client.ini to point to ${LoopbackConfig.serverIpAddress.getHostAddress}:$loginServerPort")
 
     // Add our shutdown hook (this works for Control+C as well, but not in Cygwin)
     sys addShutdownHook {

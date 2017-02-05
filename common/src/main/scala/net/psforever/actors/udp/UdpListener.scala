@@ -4,7 +4,7 @@ package net.psforever.actors.udp
 import java.net.{InetAddress, InetSocketAddress}
 
 import akka.actor.SupervisorStrategy.Stop
-import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props, Terminated}
+import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props, SupervisorStrategy, Terminated}
 import akka.io.{IO, Udp}
 import scodec.interop.akka._
 
@@ -35,7 +35,7 @@ class UdpListener(nextActorProps : Props,
     * In our one-for-one strategy, all faults lead to that child `Stop`ping.
     * @return the strategy
     */
-  override def supervisorStrategy = OneForOneStrategy() {
+  override def supervisorStrategy : SupervisorStrategy  = OneForOneStrategy() {
     case _ => Stop
   }
 
@@ -60,7 +60,7 @@ class UdpListener(nextActorProps : Props,
     * @return a partial function
     * @see `createNextActor`
     */
-  def receive = {
+  def receive : Receive = {
     case Udp.Bound(local) =>
       log.info(s"Now listening on UDP:$local")
       createNextActor()
@@ -108,7 +108,7 @@ class UdpListener(nextActorProps : Props,
     * Instantiate a child `Actor` that was specified when this class was created.
     * Greet it warmly. :)
     */
-  def createNextActor() = {
+  def createNextActor() : Unit = {
     nextActor = context.actorOf(nextActorProps, nextActorName)
     context.watch(nextActor)
     nextActor ! Hello()

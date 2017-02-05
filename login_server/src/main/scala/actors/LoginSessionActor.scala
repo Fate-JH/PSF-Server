@@ -1,10 +1,11 @@
 // Copyright (c) 2016 PSForever.net to present
-package net.psforever.actors
+package actors
 
 import java.net.InetSocketAddress
 
 import akka.actor.MDCContextAware.Implicits._
 import akka.actor.{Actor, ActorRef, Cancellable, MDCContextAware}
+import net.psforever.actors.LoopbackConfig
 import net.psforever.actors.session.{DropSession, RawPacket}
 import net.psforever.actors.udp.HelloFriend
 import net.psforever.packet.control._
@@ -33,7 +34,7 @@ class LoginSessionActor extends Actor with MDCContextAware {
 
   //TODO: move to global configuration or database lookup
   val serverName = "PSForever"
-  val serverAddress = new InetSocketAddress(LoginConfig.serverIpAddress.getHostAddress, 51001)
+  val serverAddress = new InetSocketAddress(LoopbackConfig.serverIpAddress.getHostAddress, 51001)
 
   /**
     * The initial behavior demonstrated by this `Actor`.
@@ -49,8 +50,8 @@ class LoginSessionActor extends Actor with MDCContextAware {
     * @see `Started`
     */
   def Initializing : Receive = {
-    case HelloFriend(sessionId, right) =>
-      this.sessionId = sessionId
+    case HelloFriend(sessionid, right) =>
+      this.sessionId = sessionid
       leftRef = sender()
       rightRef = right.asInstanceOf[ActorRef]
       context.become(Started)
@@ -118,7 +119,7 @@ class LoginSessionActor extends Actor with MDCContextAware {
     * The third type of control packet assists in maintaining the connection between the client and server.
     * @param pkt the packet
     */
-  def handleControlPkt(pkt : PlanetSideControlPacket) = {
+  def handleControlPkt(pkt : PlanetSideControlPacket) : Unit = {
     pkt match {
       case SlottedMetaPacket(slot, subslot, innerPacket) =>
         sendResponse(PacketCoding.CreateControlPacket(SlottedMetaAck(slot, subslot)))
@@ -132,7 +133,7 @@ class LoginSessionActor extends Actor with MDCContextAware {
 
       //IMPORTANT: ControlSync packets must be handled before MultiPackets are handled
       case sync @ ControlSync(diff, unk, f1, f2, f3, f4, fa, fb) =>
-        log.trace(s"SYNC: ${sync}")
+        log.trace(s"SYNC: $sync")
         val serverTick = Math.abs(System.nanoTime().toInt) // limit the size to prevent encoding error
         sendResponse(PacketCoding.CreateControlPacket(ControlSyncResp(diff, serverTick, fa, fb, fb, fa)))
 
@@ -158,14 +159,14 @@ class LoginSessionActor extends Actor with MDCContextAware {
     * No other formal game packets should be encountered at this point.
     * @param pkt the packet
     */
-  def handleGamePkt(pkt : PlanetSideGamePacket) = pkt match {
+  def handleGamePkt(pkt : PlanetSideGamePacket) : Unit = pkt match {
       case LoginMessage(majorVersion, minorVersion, buildDate, username, password, token, revision) =>
-        val clientVersion = s"Client Version: ${majorVersion}.${minorVersion}.${revision}, ${buildDate}"
+        val clientVersion = s"Client Version: $majorVersion.$minorVersion.$revision, $buildDate"
         if(token.isDefined) {
-          log.info(s"New login UN:$username Token:${token.get}. ${clientVersion}")
+          log.info(s"New login UN:$username Token:${token.get}. $clientVersion")
         }
         else {
-          log.info(s"New login UN:$username PW:$password. ${clientVersion}")
+          log.info(s"New login UN:$username PW:$password. $clientVersion")
         }
         val newToken = token.getOrElse("THISISMYTOKENYES")
         //TODO hardcode LoginRespMessage, if it must look like this
@@ -174,21 +175,21 @@ class LoginSessionActor extends Actor with MDCContextAware {
         updateServerListTask = context.system.scheduler.schedule(0 seconds, 2 seconds, self, UpdateServerList())
 
       case ConnectToWorldRequestMessage(name, _, _, _, _, _, _) =>
-        log.info(s"Connect to world request for '${name}'")
+        log.info(s"Connect to world request for '$name'")
         val response = ConnectToWorldMessage(serverName, serverAddress.getHostString, serverAddress.getPort)
         sendResponse(PacketCoding.CreateGamePacket(0, response))
         sendResponse(DropSession(sessionId, "user transferring to world"))
         //TODO should we stop refreshing the server list manually?
 
       case default =>
-        log.debug(s"Unhandled GamePacket ${pkt}")
+        log.debug(s"Unhandled GamePacket $pkt")
   }
 
   /**
     * Dispatch a packet that tells the client about the available servers.
     * The non-technical term for this process is an "announce."
     */
-  def updateServerList() = {
+  def updateServerList() : Unit = {
     //TODO when the login server and the game server separate, information about servers is provided by external conenctions?
     val msg = VNLWorldStatusMessage("Welcome to PlanetSide! ",
       Vector(
@@ -207,7 +208,7 @@ class LoginSessionActor extends Actor with MDCContextAware {
     * What happens when this `Actor` stops.
     * Stop updating the server list.
     */
-  override def postStop() = {
+  override def postStop() : Unit = {
     if(updateServerListTask != null)
       updateServerListTask.cancel()
   }
@@ -216,7 +217,7 @@ class LoginSessionActor extends Actor with MDCContextAware {
     * Log the problem that was encountered.
     * @param error description of the error
     */
-  def failWithError(error : String) = {
+  def failWithError(error : String) : Unit = {
     log.error(error)
     //sendResponse(PacketCoding.CreateControlPacket(ConnectionClose()))
   }
@@ -225,7 +226,7 @@ class LoginSessionActor extends Actor with MDCContextAware {
     * Send a message towards the outside network.
     * @param cont the message or packet
     */
-  def sendResponse(cont : Any) = {
+  def sendResponse(cont : Any) : Unit = {
     log.trace("LOGIN SEND: " + cont)
     MDC("sessionId") = sessionId.toString
     rightRef !> cont
@@ -236,7 +237,7 @@ class LoginSessionActor extends Actor with MDCContextAware {
     * Guaranteed data in byte form, it is repackaged into a `RawPacket` before continuing on its journey.
     * @param pkt the message
     */
-  def sendRawResponse(pkt : ByteVector) = {
+  def sendRawResponse(pkt : ByteVector) : Unit = {
     log.trace("LOGIN SEND RAW: " + pkt)
     MDC("sessionId") = sessionId.toString
     rightRef !> RawPacket(pkt)

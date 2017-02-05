@@ -45,7 +45,7 @@ lazy val pslogin = (project in file("pslogin")).
     name := "pslogin"
   ).
   settings(pscryptoSettings: _*).
-  dependsOn(common)
+  dependsOn(game_server, login_server)
 
 lazy val login_server = (project in file("login_server")).
   settings(commonSettings: _*).

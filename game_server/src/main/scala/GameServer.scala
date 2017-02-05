@@ -2,6 +2,7 @@
 import java.net.InetAddress
 import java.io.File
 
+import actors.WorldSessionActor
 import akka.actor.{ActorSystem, Props}
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
@@ -9,7 +10,7 @@ import ch.qos.logback.core.joran.spi.JoranException
 import ch.qos.logback.core.status._
 import ch.qos.logback.core.util.StatusPrinter
 import com.typesafe.config.ConfigFactory
-import net.psforever.actors.{CryptoSessionActor, LoginConfig, WorldSessionActor}
+import net.psforever.actors.{CryptoSessionActor, LoopbackConfig}
 import net.psforever.actors.session.{SessionPipeline, SessionRouter}
 import net.psforever.actors.udp.UdpListener
 import net.psforever.crypto.CryptoInterface
@@ -64,7 +65,7 @@ object GameServer {
     * @param context SLF4J logger context
     * @return Boolean return true if context has errors
     */
-  def loggerHasErrors(context : LoggerContext) = {
+  def loggerHasErrors(context : LoggerContext) : Boolean = {
     val statusUtil = new StatusUtil(context)
 
     statusUtil.getHighestLevel(0) >= Status.WARN
@@ -96,10 +97,10 @@ object GameServer {
 
   def parseArgs(args : Array[String]) : Unit = {
     if(args.length == 1) {
-      LoginConfig.serverIpAddress = InetAddress.getByName(args{0})
+      LoopbackConfig.serverIpAddress = InetAddress.getByName(args{0})
     }
     else {
-      LoginConfig.serverIpAddress = InetAddress.getLocalHost
+      LoopbackConfig.serverIpAddress = InetAddress.getLocalHost
     }
   }
 
@@ -107,7 +108,10 @@ object GameServer {
     // Early start up
     banner()
     println(systemInformation)
+    setup()
+  }
 
+  def setup() : Unit = {
     // Config directory
     // Assume a default of the current directory
     var configDirectory = "config"
@@ -181,7 +185,7 @@ object GameServer {
     )
     */
     worldRouter = Props(new SessionRouter("World", worldTemplate))
-    worldListener = system.actorOf(Props(new UdpListener(worldRouter, "world-session-router", LoginConfig.serverIpAddress, worldServerPort)), "world-udp-endpoint")
+    worldListener = system.actorOf(Props(new UdpListener(worldRouter, "world-session-router", LoopbackConfig.serverIpAddress, worldServerPort)), "world-udp-endpoint")
 
     // Add our shutdown hook (this works for Control+C as well, but not in Cygwin)
     sys addShutdownHook {
