@@ -36,8 +36,8 @@ object GameServer {
     println(ansi().fgBright(BLUE).a(   """  / _ \/ __/ __/__  _______ _  _____ ____"""))
     println(ansi().fgBright(MAGENTA).a(""" / ___/\ \/ _// _ \/ __/ -_) |/ / -_) __/"""))
     println(ansi().fgBright(RED).a(    """/_/  /___/_/  \___/_/  \__/|___/\__/_/""").reset())
-    println("""    Game Server - PSForever Project""")
-    println("""        http://psforever.net""")
+    println(                           """    Game Server - PSForever Project""")
+    println(                           """         http://psforever.net""")
     println
   }
 
@@ -108,10 +108,10 @@ object GameServer {
     // Early start up
     banner()
     println(systemInformation)
-    setup()
+    setup(Array.empty)
   }
 
-  def setup() : Unit = {
+  def setup(args : Array[String]) : Unit = {
     // Config directory
     // Assume a default of the current directory
     var configDirectory = "config"
@@ -122,7 +122,7 @@ object GameServer {
     }
 
     initializeLogging(configDirectory + File.separator + "logback.xml")
-    parseArgs(this.args)
+    parseArgs(args ++ this.args)
 
     /** Initialize the PSCrypto native library
       *
@@ -163,9 +163,29 @@ object GameServer {
     ).asJava
 
     /** Start up the main actor system. This "system" is the home for all actors running on this server */
-    system = ActorSystem("PsGame", ConfigFactory.parseMap(config))
+    system = ActorSystem("Ps_GameServer", ConfigFactory.parseMap(config))
 
     /** Create pipelines for the world servers */
+    /** Create pipelines for the login and world servers
+      *
+      * The first node in the pipe is an Actor that handles the crypto for protecting packets.
+      * After any crypto operations have been applied or unapplied, the packets are passed on to the next
+      * actor in the chain. For an incoming packet, this is a player session handler. For an outgoing packet
+      * this is the session router, which returns the packet to the sending host.
+      *
+      * Login sessions are divided between two actors. The crypto session actor transparently handles all of the cryptographic
+      * setup of the connection. Once a correct crypto session has been established, all packets, after being decrypted
+      * will be passed on to the login session actor. This actor has important state that is used to maintain the login
+      * session.
+      *
+      *                      > PlanetSide net.psforever.actors.Session Pipeline <
+      *
+      *            read()                  route                decrypt
+      * UDP Socket -----> [Session Router] -----> [Crypto Actor] -----> [Session Actor]
+      *     /|\             |         /|\          |       /|\                |
+      *      |     write()  |          |  encrypt  |        |   response      |
+      *      +--------------+          +-----------+        +-----------------+
+      **/
     val worldTemplate = List(
       SessionPipeline("crypto-session-", Props[CryptoSessionActor]),
       SessionPipeline("world-session-", Props[WorldSessionActor])
@@ -189,8 +209,9 @@ object GameServer {
 
     // Add our shutdown hook (this works for Control+C as well, but not in Cygwin)
     sys addShutdownHook {
-      // TODO: clean up active sessions and close resources safely
+      //TODO: clean up active sessions and close resources safely
       logger.info("Game server now shutting down...")
+      system.terminate
     }
   }
 
