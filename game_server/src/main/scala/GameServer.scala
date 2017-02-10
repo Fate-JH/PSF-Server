@@ -31,6 +31,9 @@ object GameServer {
   var worldRouter : akka.actor.Props = null
   var worldListener : akka.actor.ActorRef = null
 
+  /**
+    * Pretty terminal graphics.
+    */
   def banner() : Unit = {
     println(ansi().fgBright(BLUE).a(   """   ___  ________"""))
     println(ansi().fgBright(BLUE).a(   """  / _ \/ __/ __/__  _______ _  _____ ____"""))
@@ -41,7 +44,10 @@ object GameServer {
     println
   }
 
-  /** Grabs the most essential system information and returns it as a preformatted string */
+  /**
+    * Grabs essential system information and returns it as a formatted string.
+    * @return the system information
+    */
   def systemInformation : String = {
     s"""|~~~ System Information ~~~
         |${System.getProperty("os.name")} (v. ${System.getProperty("os.version")}, ${System.getProperty("os.arch")})
@@ -49,7 +55,10 @@ object GameServer {
     """.stripMargin
   }
 
-  /** Used to enumerate all of the Java properties. Used in testing only */
+  /**
+    * Enumerate all of the Java properties.
+    * Testing only.
+    */
   def enumerateAllProperties() : Unit = {
     val props = System.getProperties
     val enums = props.propertyNames()
@@ -71,21 +80,21 @@ object GameServer {
     statusUtil.getHighestLevel(0) >= Status.WARN
   }
 
-  /** Loads the logging configuration and starts logging */
+  /**
+    * Loads the logging configuration and starts logging
+    * @param logfile the file name where information for this application will be saved
+    */
   def initializeLogging(logfile : String) : Unit = {
-    // assume SLF4J is bound to logback in the current environment
+    //assume SLF4J is bound to logback in the current environment
     val lc = slf4j.LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
-
     try {
       val configurator = new JoranConfigurator()
       configurator.setContext(lc)
-
-      // reset any loaded settings
-      lc.reset()
+      lc.reset() //reset any loaded settings
       configurator.doConfigure(logfile)
     }
     catch {
-      case je : JoranException => ;
+      case je : JoranException =>
     }
 
     if(loggerHasErrors(lc)) {
@@ -95,6 +104,10 @@ object GameServer {
     }
   }
 
+  /**
+    * If we've inherited any command line parameters, dissect them and apply them.
+    * @param args the arguments in list form
+    */
   def parseArgs(args : Array[String]) : Unit = {
     if(args.length == 1) {
       LoopbackConfig.serverIpAddress = InetAddress.getByName(args{0})
@@ -104,27 +117,36 @@ object GameServer {
     }
   }
 
+  /**
+    * An entry point to the game world application.
+    * Calls the secondary entry point for this `GameServer`.
+    * This entry point performs basic reporting that is displayed when the `GameServer` is operating on its own.
+    */
   def run() : Unit = {
-    // Early start up
+    //early start up
     banner()
     println(systemInformation)
-    setup(Array.empty)
-  }
 
-  def setup(args : Array[String]) : Unit = {
-    // Config directory
-    // Assume a default of the current directory
+    //config directory; assume a default of the current directory
     var configDirectory = "config"
-
-    // This is defined when we are running from SBT pack
+    //defined when we are running from SBT pack
     if(System.getProperty("prog.home") != null) {
       configDirectory = System.getProperty("prog.home") + File.separator + "config"
     }
-
     initializeLogging(configDirectory + File.separator + "logback.xml")
-    parseArgs(args ++ this.args)
+    logger.info(s"Detected ${Runtime.getRuntime.availableProcessors()} available logical processor(s)")
+    setup(Array.empty)
+  }
 
-    /** Initialize the PSCrypto native library
+  /**
+    * A secondary entry point to the game world application.
+    * This entry point skips over basic reporting that is displayed when the `GameServer` is operating on its own.
+    * @param args the arguments in list form
+    */
+  def setup(args : Array[String]) : Unit = {
+    parseArgs(args ++ this.args)
+    /**
+      * Initialize the PSCrypto native library
       *
       * PSCrypto provides PlanetSide specific crypto that is required to communicate with it.
       * It has to be distributed as a native library because there is no Scala version of the required
@@ -147,10 +169,7 @@ object GameServer {
         sys.exit(1)
     }
 
-    // TODO: pluralize "processors"
-    logger.info(s"Detected ${Runtime.getRuntime.availableProcessors()} available logical processors")
     logger.info("Starting actor subsystems...")
-
     /** Make sure we capture Akka messages (but only INFO and above)
       *
       * This same config can be specified in a configuration file, but that's more work at this point.
@@ -165,8 +184,7 @@ object GameServer {
     /** Start up the main actor system. This "system" is the home for all actors running on this server */
     system = ActorSystem("Ps_GameServer", ConfigFactory.parseMap(config))
 
-    /** Create pipelines for the world servers */
-    /** Create pipelines for the login and world servers
+    /** Create a pipeline for the game server
       *
       * The first node in the pipe is an Actor that handles the crypto for protecting packets.
       * After any crypto operations have been applied or unapplied, the packets are passed on to the next
@@ -193,7 +211,6 @@ object GameServer {
 
     val worldServerPort = 51001
 
-
     // Uncomment for network simulation
     // TODO: make this config or command flag
     /*
@@ -207,7 +224,7 @@ object GameServer {
     worldRouter = Props(new SessionRouter("World", worldTemplate))
     worldListener = system.actorOf(Props(new UdpListener(worldRouter, "world-session-router", LoopbackConfig.serverIpAddress, worldServerPort)), "world-udp-endpoint")
 
-    // Add our shutdown hook (this works for Control+C as well, but not in Cygwin)
+    //add our shutdown hook (this works for Control+C as well, but not in Cygwin)
     sys addShutdownHook {
       //TODO: clean up active sessions and close resources safely
       logger.info("Game server now shutting down...")
@@ -219,7 +236,7 @@ object GameServer {
     this.args = args
     run()
 
-    // Wait forever until the actor system shuts down
+    //wait forever until the actor system shuts down
     Await.result(system.whenTerminated, Duration.Inf)
   }
 }
