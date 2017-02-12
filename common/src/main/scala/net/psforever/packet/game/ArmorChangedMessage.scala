@@ -43,6 +43,4 @@ object ArmorChangedMessage extends Marshallable[ArmorChangedMessage] {
       ("armor" | uintL(3)) ::
       ("subtype" | uintL(3))
     ).as[ArmorChangedMessage]
-
-  var changeOnce : Boolean = false
 }

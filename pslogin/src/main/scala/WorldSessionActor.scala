@@ -1,7 +1,7 @@
 // Copyright (c) 2016 PSForever.net to present
 import java.net.{InetAddress, InetSocketAddress}
 
-import akka.actor.{Actor, ActorRef, Cancellable, MDCContextAware}
+import akka.actor.{Actor, ActorRef, Cancellable, MDCContextAware, Props}
 import net.psforever.packet.{PlanetSideGamePacket, _}
 import net.psforever.packet.control._
 import net.psforever.packet.game._
@@ -11,6 +11,7 @@ import org.log4s.MDC
 import MDCContextAware.Implicits._
 import net.psforever.packet.game.objectcreate._
 import net.psforever.types.{ChatMessageType, Vector3}
+import net.psforever.uid.{Ready, UIDKeyGen}
 import scodec.Attempt
 
 class WorldSessionActor extends Actor with MDCContextAware {
@@ -23,6 +24,10 @@ class WorldSessionActor extends Actor with MDCContextAware {
   var rightRef : ActorRef = ActorRef.noSender
 
   var clientKeepAlive : Cancellable = null
+
+  var playerCrouching : Boolean = false
+
+  val uids = context.actorOf(Props(new UIDKeyGen(65535)), "UIDKeyGen")
 
   override def postStop() = {
     if(clientKeepAlive != null)
@@ -383,6 +388,7 @@ class WorldSessionActor extends Actor with MDCContextAware {
               import scala.concurrent.duration._
               import scala.concurrent.ExecutionContext.Implicits.global
               clientKeepAlive = context.system.scheduler.schedule(0 seconds, 500 milliseconds, self, PokeClient())
+              uids ! Ready
           }
         case default =>
           log.error("Unsupported " + default + " in " + msg)
@@ -399,26 +405,29 @@ class WorldSessionActor extends Actor with MDCContextAware {
 
     case msg @ PlayerStateMessageUpstream(avatar_guid, pos, vel, unk1, aim_pitch, unk2, seq_time, unk3, is_crouching, unk4, unk5, unk6, unk7, unk8) =>
       //log.info("PlayerState: " + msg)
-      if(is_crouching != ArmorChangedMessage.changeOnce) {
-        ArmorChangedMessage.changeOnce = is_crouching
-        ang += 1
-        //carefully delete inventory
-//        sendRawResponse(hex"19 4C00 00") //beamer
-//        sendRawResponse(hex"19 4D00 00") //beamer ammo
-//        sendRawResponse(hex"19 4E00 00") //suppressor
-//        sendRawResponse(hex"19 4F00 00") //suppressor ammo
-//        sendRawResponse(hex"19 5000 00") //forceblade
-//        sendRawResponse(hex"19 5100 00") //forceblade ammo
-//        sendRawResponse(hex"19 5200 00") //thing
-//        sendRawResponse(hex"19 5300 00") //ammo, 9mm
-//        sendRawResponse(hex"19 5400 00") //ammo, 9mm
-//        sendRawResponse(hex"19 5500 00") //ammo, 9mm
-//        sendRawResponse(hex"19 5600 00") //ammo, 9mm ap
-//        sendRawResponse(hex"19 5700 00") //ammo, plasma
-//        sendRawResponse(hex"19 5800 00") //rek
-        //stuff
-//        sendRawResponse(hex"18 7C000000 2580 692 5C0F 9E C0000018000") //reaver fury rockets, 2,6
-//        sendRawResponse(hex"18 87000000 2580 100 690B 80 8800000200008") // ACE, Boomer, pistol slot 1
+      if(is_crouching != playerCrouching) { //main trigger
+        playerCrouching = is_crouching
+        if(playerCrouching) { //trigger only when crouching, not when un-crouching
+          log.info("" + ang)
+          ang += 1
+          //carefully delete inventory
+          //        sendRawResponse(hex"19 4C00 00") //beamer
+          //        sendRawResponse(hex"19 4D00 00") //beamer ammo
+          //        sendRawResponse(hex"19 4E00 00") //suppressor
+          //        sendRawResponse(hex"19 4F00 00") //suppressor ammo
+          //        sendRawResponse(hex"19 5000 00") //forceblade
+          //        sendRawResponse(hex"19 5100 00") //forceblade ammo
+          //        sendRawResponse(hex"19 5200 00") //thing
+          //        sendRawResponse(hex"19 5300 00") //ammo, 9mm
+          //        sendRawResponse(hex"19 5400 00") //ammo, 9mm
+          //        sendRawResponse(hex"19 5500 00") //ammo, 9mm
+          //        sendRawResponse(hex"19 5600 00") //ammo, 9mm ap
+          //        sendRawResponse(hex"19 5700 00") //ammo, plasma
+          //        sendRawResponse(hex"19 5800 00") //rek
+          //stuff
+          //        sendRawResponse(hex"18 7C000000 2580 692 5C0F 9E C0000018000") //reaver fury rockets, 2,6
+          //        sendRawResponse(hex"18 87000000 2580 100 690B 80 8800000200008") // ACE, Boomer, pistol slot 1
+        }
       }
 
     case msg @ ChatMsg(messagetype, has_wide_contents, recipient, contents, note_contents) =>
