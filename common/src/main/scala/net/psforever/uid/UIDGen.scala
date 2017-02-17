@@ -2,31 +2,12 @@
 package net.psforever.uid
 
 /**
-  * The availability of individual UIDs is maintained by the given policy.
-  */
-object AvailabilityPolicy extends Enumeration {
-  type Type = Value
-
-  /**
-    * An `AVAILABLE` UID is ready and waiting to be `LEASED` for use.
-    * A `LEASED` UID has been issued and is currently being used.
-    * A `RESTRICTED` UID can never be issued.
-    * It does, however, act like it has been `LEASED` and can not be casually be returned.
-    */
-  val
-    AVAILABLE,
-    LEASED,
-    RESTRICTED
-    = Value
-}
-
-/**
   * Produce a relatively pseudorandom series of unique identification numbers (UIDs) from a pool of candidate numbers.
   * The UIDs that have been made available are returned as "keys" that reflect the underlying UID's lookup entry.<br>
   * <br>
   * The number of UIDs managed by this object is fixed at compile time.
-  * UIDs are selected from one or more accessible pools through one of two pseudorandom drawing processes.
-  * The pool and method referred to contains either:
+  * UIDs are selected through one of two pseudorandom drawing processes.
+  * The process referred to indicates either:
   * a) the UIDs before they have been selected once; and,
   * b) the UIDs after they have been used and returned.
   * A selected UID is provided to the requested context so that its "purpose" can be assigned.
@@ -42,33 +23,14 @@ object AvailabilityPolicy extends Enumeration {
   * Further randomness is applied by the FIFO order of UIDs returned to this manager.
   * The smaller the pool of managed numbers, however, the less chance of the randomness affecting the returned values.<br>
   * <br>
-  * The keys are an abstract referential object to keep track of the current "purpose" of the UID.
-  * Additionally, the key also remembers the current selectable state of its managed UID.
-  * Although the policies are fixed, the "purpose" is not a fixed (type of) entity.
-  * The only requirement of the "purpose" is that it properly reflects the current application.<br>
-  * <br>
   * When UIDs are selected, but have not been used, they should be returned immediately to avoid artificial depletion.
-  * @param keys the number of UIDs to be managed by this resource;
-  *             must be a positive integer or zero;
-  *             the actual UIDs generated is exclusive, from `0 -- (keys-1)`
-  * @throws IllegalArgumentException if the number of UIDs managed is less than one
+  * @param src the object that governs the UIDs
   */
-class UIDGen(keys: Int) {
+class UIDGen()(private implicit val src : UIDSource) extends UIDNumberPool[Any] {
   private val log = org.log4s.getLogger
-  if(keys < 1) {
-    log.error("UID distribution asked to produce a non-positive number of keys")
-    throw new IllegalArgumentException("UID distribution asked to produce a non-positive number of keys")
-  }
 
   import scala.collection.mutable
   import scala.collection.mutable.ListBuffer
-  /**
-    * An `Array` of the UID monitors - keys - managed by this resource.
-    */
-  private val keyring : Array[UIDGen.UidKey] = Array.ofDim[UIDGen.UidKey](keys)
-  /**
-    * A `Queue` of all UID keys that have been issued and returned at some point, and are available for re-issuing.
-    */
   private val chain : mutable.Queue[Int] = new mutable.Queue[Int]
   /**
     * The pool of all UIDs from which the "first batch" of keys are selected.
@@ -90,7 +52,7 @@ class UIDGen(keys: Int) {
     *          defaults to one (1)
     * @return a `List` of the UID keys that have been issued
     */
-  def getAvailableUID(n : Int = 1) : List[LoanedKey] = {
+  override def getAvailableUID(n : Int = 1) : List[LoanedKey] = {
     val outList : List[LoanedKey] = (if(initialChain.nonEmpty) { selectNextRandom(n) } else { selectNextIterate(n) }).toList
     if(outList.isEmpty) {
       log.warn("All keys currently in use")
@@ -108,10 +70,10 @@ class UIDGen(keys: Int) {
     * @param uid a specific UID
     * @return a UID key, if the requested UID could be produced; `None, otherwise`
     */
-  def getSpecificAvailableUID(uid : Int) : Option[LoanedKey] = {
+  override def getSpecificAvailableUID(uid : Int) : Option[LoanedKey] = {
     var outKey : Option[LoanedKey] = None
-    if(-1 < uid && uid < keys) {
-      val uidKey : UIDGen.UidKey = keyring(uid)
+    if(-1 < uid && uid < src.size) {
+      val uidKey : UIDSource.UidKey = src.key(uid)
       if(uidKey.policy == AvailabilityPolicy.AVAILABLE) {
         uidKey.policy = AvailabilityPolicy.LEASED
         outKey = Some(LoanedKey(uid, uidKey))
@@ -121,7 +83,7 @@ class UIDGen(keys: Int) {
   }
 
   /**
-    * Return specific UIDs back to the control of their generator.<br>
+    * Return specific UIDs back to the control of their source.<br>
     * <br>
     * When the UID is returned, it is no longer considered attached to its previous "purpose."
     * The UID key is marked as `AVAILABLE` if it was `LEASED`, and its "purpose" is returned.
@@ -131,12 +93,13 @@ class UIDGen(keys: Int) {
     * @param list a `List` of the UIDs to return
     * @return a `List` of "purpose" objects
     */
-  def returnUsedUID(list : List[Int]) : List[Any] = {
+  override def returnUsedUID(list : List[Int]) : List[Any] = {
+    val total : Int = src.size
     val outList : mutable.ListBuffer[Any] = new mutable.ListBuffer[Any]
     list.foreach { uid : Int =>
       var out : Any = None
-      if(-1 < uid && uid < keys) {
-        val uidKey : UIDGen.UidKey = keyring(uid)
+      if(-1 < uid && uid < total) {
+        val uidKey : UIDSource.UidKey = src.key(uid)
         if(uidKey.policy == AvailabilityPolicy.LEASED) {
           uidKey.policy = AvailabilityPolicy.AVAILABLE
           out = uidKey.obj.get
@@ -159,13 +122,14 @@ class UIDGen(keys: Int) {
     * @param list a `List` of the UIDs to reuse
     * @return a `List` of paired UID keys
     */
-  def reissueUsedUID(list : List[Int]) : List[LoanedKey] = {
+  override def reissueUsedUID(list : List[Int]) : List[LoanedKey] = {
+    val total : Int = src.size
     val outList : mutable.ListBuffer[LoanedKey] = new mutable.ListBuffer[LoanedKey]
     list.foreach { uid : Int =>
-      if(-1 < uid && uid < keys) {
-        val uidKey : UIDGen.UidKey = keyring(uid)
+      if(-1 < uid && uid < total) {
+        val uidKey : UIDSource.UidKey = src.key(uid)
         if(uidKey.policy == AvailabilityPolicy.LEASED) {
-          val newKey = new UIDGen.UidKey()
+          val newKey = new UIDSource.UidKey()
           newKey.obj = uidKey.obj
           outList += LoanedKey(uid, newKey)
           uidKey.obj = None
@@ -185,11 +149,12 @@ class UIDGen(keys: Int) {
     * @param list a `List` of the UIDs to prohibit
     * @return a `List` of the UID keys whose with UIDs were prohibited
     */
-  def restrictAvailableUID(list : List[Int]) : List[LoanedKey] = {
+  override def restrictAvailableUID(list : List[Int]) : List[LoanedKey] = {
+    val total : Int = src.size
     val outList : mutable.ListBuffer[LoanedKey] = new mutable.ListBuffer[LoanedKey]
     list.foreach { uid : Int =>
-      if(-1 < uid && uid < keys) {
-        val uidKey : UIDGen.UidKey = keyring(uid)
+      if(-1 < uid && uid < total) {
+        val uidKey : UIDSource.UidKey = src.key(uid)
         if(uidKey.policy == AvailabilityPolicy.AVAILABLE) {
           uidKey.policy = AvailabilityPolicy.RESTRICTED
           outList += LoanedKey(uid, uidKey)
@@ -214,12 +179,13 @@ class UIDGen(keys: Int) {
     * @param list a `List` of the UIDs to allow again
     * @return a `List` of "purpose" objects
     */
-  def allowRestrictedUID(list : List[Int]) : List[Any] = {
+  override def allowRestrictedUID(list : List[Int]) : List[Any] = {
+    val total : Int = src.size
     val outList : mutable.ListBuffer[Any] = new mutable.ListBuffer[Any]
     list.foreach { uid : Int =>
       var out : Any = None
-      if(-1 < uid && uid < keys) {
-        val uidKey : UIDGen.UidKey = keyring(uid)
+      if(-1 < uid && uid < total) {
+        val uidKey : UIDSource.UidKey = src.key(uid)
         if(uidKey.policy == AvailabilityPolicy.RESTRICTED) {
           uidKey.policy = AvailabilityPolicy.LEASED
           out = uidKey.obj.get
@@ -230,13 +196,8 @@ class UIDGen(keys: Int) {
     outList.toList
   }
 
-  /**
-    * Request the "purpose" attached to a specific UID.
-    * @param key a specific UID
-    * @return an object suggesting how this UID is being used, if it is being used
-    */
-  def getObjectFromUID(key : Int) : Option[Any] = {
-    val uidKey : UIDGen.UidKey = keyring(key)
+  override def getObjectFromUID(key : Int) : Option[Any] = {
+    val uidKey : UIDSource.UidKey = src.key(key)
     if(uidKey.obj.isDefined) {
       uidKey.obj
     }
@@ -262,6 +223,7 @@ class UIDGen(keys: Int) {
   private def selectNextRandom(num : Int) : ListBuffer[LoanedKey] = {
     val outList : mutable.ListBuffer[LoanedKey] = new mutable.ListBuffer[LoanedKey]
     var cnt : Int = 0
+    val total : Int = src.size
     /*
     The following process selects random Integers from a sorted List without discarding elements or repeating elements.
     The list is traversed in-order, starting at a current index position.
@@ -269,26 +231,26 @@ class UIDGen(keys: Int) {
     The index position element is then swapped with the chosen element so that the former remains available for selection.
     The current index position is progressed per attempt, constraining the span of elements that were not (yet) chosen.
      */
-    while(permuteNum <= keys && cnt < num) {
+    while(permuteNum <= total && cnt < num) {
       var policy : AvailabilityPolicy.Value = AvailabilityPolicy.LEASED //any policy but AVAILABLE
       var out : Int = -1
-      while(permuteNum <= keys && policy != AvailabilityPolicy.AVAILABLE) {
-        val n : Int = rand.nextInt(keys - permuteNum) //call a random entry still in the list
+      while(permuteNum <= total && policy != AvailabilityPolicy.AVAILABLE) {
+        val n : Int = rand.nextInt(total - permuteNum) //call a random entry still in the list
         out = initialChain(permuteNum + n)
-        policy = keyring(out).policy
+        policy = src.key(out).policy
         initialChain(permuteNum + n) = initialChain(permuteNum) //swap the index-position element with the random element
         permuteNum += 1
       }
 
       if(policy == AvailabilityPolicy.AVAILABLE) { //only return AVAILABLE UID keys
-        val uidKey = keyring(out)
+        val uidKey = src.key(out)
         uidKey.policy = AvailabilityPolicy.LEASED
         outList += LoanedKey(out, uidKey)
         cnt += 1
       }
     }
 
-    if(permuteNum == keys) { //this list is exhausted; clear it for memory and to begin next selection method
+    if(permuteNum == total) { //this list is exhausted; clear it for memory and to begin next selection method
       initialChain.clear()
       log.info("first batch cleared")
     }
@@ -309,7 +271,7 @@ class UIDGen(keys: Int) {
     var cnt = 0
     while(cnt < num && chain.nonEmpty) {
       val index : Int = chain.dequeue //always `dequeue` the head element
-      val uidKey : UIDGen.UidKey = keyring(index)
+      val uidKey : UIDSource.UidKey = src.key(index)
       if(uidKey.policy == AvailabilityPolicy.AVAILABLE) { //only return AVAILABLE UID keys
         uidKey.policy = AvailabilityPolicy.LEASED
         outList += LoanedKey(index, uidKey)
@@ -324,93 +286,14 @@ class UIDGen(keys: Int) {
     * Add all UIDs, by index, to a mutable `List` for the selection process of the "first batch."
     */
   private def initKeyRing() : Unit = {
-    for(x <- 0 until keys) {
-      keyring(x) = new UIDGen.UidKey
+    for(x <- 0 until src.size) {
       initialChain += x
     }
   }
 
-  /**
-    * Stop this UID manager from acting upon any UIDs.<br>
-    * <br>
-    * All internal lists are un-allocated.
-    * The permanent list of UID keys have any remembered "purposes" cleared.
-    * That list of "purposes" is also returned to the caller for any necessary final processing.
-    * @return always return `Nil`
-    */
-  def end() : List[Any] = {
+  override def end() : List[Any] = {
     initialChain.clear
     chain.clear
-    val outList : mutable.ListBuffer[Any] = new mutable.ListBuffer[Any]
-    for(x <- 0 until keys) {
-      if(keyring(x).obj.isDefined) {
-        outList += keyring(x).obj.get
-        keyring(x).obj = None
-      }
-    }
-    outList.toList
-  }
-}
-
-object UIDGen {
-  /**
-    * A "key" used to hold the conditions for the UID it represents.
-    */
-  class UidKey {
-    /**
-      * Represent the current and future usage state of this UID.
-      */
-    var policy : AvailabilityPolicy.Value = AvailabilityPolicy.AVAILABLE
-    /**
-      * What foreign entity is using this UID, if applicable.
-      * This can not be a WeakReference-like field.
-      */
-    var obj : Option[Any] = None
-  }
-}
-
-/**
-  * A `LoanedKey` is like a `WeakReference` to a UID key.
-  * UID keys are only stored by the originating key generator object.
-  * A "loaned key" can travel apart from its generator without exposing the original key entry to excess mutability.
-  * @param uid the UID represented by this indirect key
-  * @param _key a private reference to the original key from the `UIDGen` object
-  */
-case class LoanedKey(uid : Int, private val _key : UIDGen.UidKey) {
-  /**
-    * Reference the current `AvailabilityPolicy` of the original UID key
-    * @return the `AvailabilityPolicy`
-    */
-  def policy : AvailabilityPolicy.Value = {
-    _key.policy
-  }
-
-  /**
-    * Reference the current "purpose" of the original UID key.
-    * @return an object suggesting how this UID is being used, if it is being used
-    */
-  def obj : Option[Any] = {
-    _key.obj
-  }
-
-  /**
-    * Set the "purpose" object of the original UID key.
-    * This is the only mutable exposure given to the original UID key entry from its "loaned" copy.<br>
-    * <br>
-    * The primary purpose is to facilitate access to an underlying object reference that suggests the UID's purpose.
-    * It is considered fail-safe.
-    * The field is only set when the actual key is considered `LEASED` and the field has not been previously set.
-    * Those are appropriate conditions.
-    * @param obj an object suggesting how this UID will be used
-    * @return `true`, if the purpose reference was set; `false`, in any other case
-    */
-  def obj(obj : Any) : Boolean = {
-    if(_key.policy == AvailabilityPolicy.LEASED && _key.obj.isEmpty) {
-      _key.obj = Some(obj)
-      true
-    }
-    else {
-      false
-    }
+    Nil
   }
 }

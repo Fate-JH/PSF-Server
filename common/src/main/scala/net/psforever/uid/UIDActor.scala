@@ -13,7 +13,7 @@ final case class GetObjectFromUID(key : Int)
   * Recommended use is the `akka` `ask` pattern.
   * @param uidSource the manager for a series of UIDs
   */
-class UIDActor(private val uidSource : UIDGen) extends akka.actor.Actor {
+class UIDActor(private val uidSource : UIDNumberPool[_]) extends akka.actor.Actor {
   //private val log = org.log4s.getLogger
 
   /**
