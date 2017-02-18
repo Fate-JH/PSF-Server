@@ -8,7 +8,7 @@ package net.psforever.uid
   * @param uid the UID represented by this indirect key
   * @param _key a private reference to the original key from the `UIDGen` object
   */
-case class LoanedKey(uid : Int, private val _key : UIDSource.UidKey) {
+case class LoanedKey(uid : Int, private val _key : NumberSource.UidKey) {
   /**
     * Reference the current `AvailabilityPolicy` of the original UID key
     * @return the `AvailabilityPolicy`
@@ -26,15 +26,16 @@ case class LoanedKey(uid : Int, private val _key : UIDSource.UidKey) {
   }
 
   /**
-    * Set the "purpose" object of the original UID key.
-    * This is the only mutable exposure given to the original UID key entry from its "loaned" copy.<br>
+    * Set the "purpose" object of the original UID key.<br>
     * <br>
-    * The primary purpose is to facilitate access to an underlying object reference that suggests the UID's purpose.
+    * This is the only mutable exposure given to the original UID key entry from its "loaned" copy.
+    * The primary reason is to facilitate access to an underlying object reference that suggests the UID's purpose.
     * It is considered fail-safe.
     * The field is only set when the actual key is considered `LEASED` and the field has not been previously set.
     * Those are appropriate conditions.
     * @param obj an object suggesting how this UID will be used
-    * @return `true`, if the purpose reference was set; `false`, in any other case
+    * @return `true`, if the purpose reference was set;
+    *        `false`, in any other case
     */
   def obj(obj : Any) : Boolean = {
     if(_key.policy == AvailabilityPolicy.LEASED && _key.obj.isEmpty) {

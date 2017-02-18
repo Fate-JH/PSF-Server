@@ -17,7 +17,7 @@ import scala.collection.mutable
   *             the actual UIDs generated is exclusive, from `0 -- (keys-1)`
   * @throws IllegalArgumentException if the number of UIDs managed is less than one
   */
-class UIDSource(keys : Int) {
+class UniqueIdentifierSource(keys : Int) {
   //private val log = org.log4s.getLogger
   if(keys < 1) {
     throw new IllegalArgumentException("UID distribution asked to produce a non-positive number of keys")
@@ -26,7 +26,7 @@ class UIDSource(keys : Int) {
   /**
     * An `Array` of the UID monitors - keys - managed by this resource.
     */
-  private val keyring : Array[UIDSource.UidKey] = Array.ofDim[UIDSource.UidKey](keys)
+  private val keyring : Array[NumberSource.UidKey] = Array.ofDim[NumberSource.UidKey](keys)
   initKeyRing()
 
   /**
@@ -34,7 +34,7 @@ class UIDSource(keys : Int) {
     */
   private def initKeyRing() : Unit = {
     for(x <- 0 until keys) {
-      keyring(x) = new UIDSource.UidKey
+      keyring(x) = new NumberSource.UidKey
     }
   }
 
@@ -52,7 +52,7 @@ class UIDSource(keys : Int) {
     * @throws IndexOutOfBoundsException if the requested uid is above or below the range
     * @return
     */
-  def key(uid : Int) : UIDSource.UidKey = {
+  def key(uid : Int) : NumberSource.UidKey = {
     if(-1 < uid && uid > keyring.length) {
       throw new IndexOutOfBoundsException(s"this source does not track a UID $uid")
     }
@@ -78,9 +78,9 @@ class UIDSource(keys : Int) {
   }
 }
 
-object UIDSource {
+object NumberSource {
   /**
-    * A "key" used to hold the conditions for the UID it represents.
+    * A "key" used to hold the conditions for the unique number it is intended to represent.
     */
   class UidKey {
     /**

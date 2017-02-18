@@ -13,7 +13,7 @@ final case class GetObjectFromUID(key : Int)
   * Recommended use is the `akka` `ask` pattern.
   * @param uidSource the manager for a series of UIDs
   */
-class UIDActor(private val uidSource : UIDNumberPool[_]) extends akka.actor.Actor {
+class UIDActor(private val uidSource : UniqueIdentifierSelector) extends akka.actor.Actor {
   //private val log = org.log4s.getLogger
 
   /**
@@ -36,10 +36,10 @@ class UIDActor(private val uidSource : UIDNumberPool[_]) extends akka.actor.Acto
       context.become(Started)
 
     case RestrictedUID(list : List[Int]) =>
-      sender ! uidSource.restrictAvailableUID(list)
+      sender ! uidSource.restrictAvailable(list)
 
     case GetObjectFromUID(key : Int) =>
-      sender ! uidSource.getObjectFromUID(key)
+      sender ! uidSource.getObjectFrom(key)
 
     case _ =>
       //nothing here
@@ -53,16 +53,16 @@ class UIDActor(private val uidSource : UIDNumberPool[_]) extends akka.actor.Acto
     */
   def Started : Receive = {
     case RequestAvailableUID(n : Int) =>
-      sender ! uidSource.getAvailableUID(n)
+      sender ! uidSource.getAvailable(n)
 
     case ReturnUsedUID(list : List[Int]) =>
-      sender ! uidSource.returnUsedUID(list)
+      sender ! uidSource.returnUsed(list)
 
     case ReissueUsedUID(list : List[Int]) =>
-      sender ! uidSource.reissueUsedUID(list)
+      sender ! uidSource.reissueUsed(list)
 
     case GetObjectFromUID(key : Int) =>
-      sender ! uidSource.getObjectFromUID(key)
+      sender ! uidSource.getObjectFrom(key)
 
     case _ =>
     //nothing here
